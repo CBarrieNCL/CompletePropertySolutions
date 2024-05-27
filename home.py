@@ -53,6 +53,23 @@ CREATE TABLE IF NOT EXISTS tenancy_mapping (
     FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id)
 )
 ''')
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS services (
+    service_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    service_name TEXT NOT NULL
+)
+''')
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS service_mapping (
+    service_mapping_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    service_id INTEGER NOT NULL,
+    property_id INTEGER NOT NULL,
+    last_serviced_date TEXT,
+    next_service_date TEXT,
+    FOREIGN KEY (service_id) REFERENCES services(service_id),
+    FOREIGN KEY (property_id) REFERENCES properties(property_id)
+)
+''')
 conn.commit()
 
 def hash_password(password):
@@ -117,6 +134,10 @@ def show_admin_screen():
     display_tenants_button = ttk.Button(root, text="Display Tenant Records", command=display_tenant_records)
     display_tenants_button.pack(pady=(10, 0))
 
+    # Create a button to display service records
+    display_services_button = ttk.Button(root, text="Display Service Records", command=display_service_records)
+    display_services_button.pack(pady=(10, 0))
+
     # Create a button to add a new property
     add_property_button = ttk.Button(root, text="Add Property", command=add_property)
     add_property_button.pack(pady=(10, 0))
@@ -128,6 +149,10 @@ def show_admin_screen():
     # Create a button to add a new tenant
     add_tenant_button = ttk.Button(root, text="Add Tenant", command=add_tenant)
     add_tenant_button.pack(pady=(10, 0))
+
+    # Create a button to add a new tenant
+    add_service_button = ttk.Button(root, text="Add Sevice", command=add_service)
+    add_service_button.pack(pady=(10, 0))
 
     # Create the back to welcome screen button
     back_button = ttk.Button(root, text="Home", command=lambda: show_welcome_screen(username))
@@ -259,6 +284,35 @@ def display_tenant_records():
 
     # Create a close button
     close_button = ttk.Button(display_tenants_window, text="Close", command=close_window)
+    close_button.pack(pady=(10, 0))
+
+def display_service_records():
+    # Fetch all service records from the database
+    cursor.execute('SELECT * FROM services')
+    services = cursor.fetchall()
+
+    # Create a new window to display the service records
+    display_services_window = tk.Toplevel(root)
+    display_services_window.title("Service Records")
+
+    # Create a treeview to display the records
+    treeview = ttk.Treeview(display_services_window, columns=("ID", "Service Name"), show="headings")
+    treeview.pack(expand=True, fill='both')
+
+    # Define the columns
+    treeview.heading("ID", text="ID")
+    treeview.heading("Service Name", text="Service Name")
+
+    # Insert the records into the treeview
+    for service in services:
+        treeview.insert("", "end", values=service)
+
+    # Function to close the records window
+    def close_display_services_window():
+        display_services_window.destroy()
+
+    # Add a close button to the records window
+    close_button = ttk.Button(display_services_window, text="Close", command=close_display_services_window)
     close_button.pack(pady=(10, 0))
 
 def add_property():
@@ -424,6 +478,38 @@ def add_tenant():
     submit_button = ttk.Button(add_tenant_window, text="Submit", command=submit_tenant)
     submit_button.pack(pady=(10, 0))
 
+def add_service():
+    # Create a new window for adding a service
+    add_service_window = tk.Toplevel(root)
+    add_service_window.title("Add Service")
+
+    # Create entry fields for service name
+    service_name_label = ttk.Label(add_service_window, text="Service Name:")
+    service_name_label.pack(pady=(10, 5))
+    service_name_entry = ttk.Entry(add_service_window)
+    service_name_entry.pack(pady=(0, 10))
+
+    # Function to add the tenant to the database
+    def submit_service():
+        service_name = service_name_entry.get()
+
+        # Validate the input
+        if not service_name:
+            messagebox.showerror("Error", "Service name field is required.")
+            return
+
+        # Insert the tenant into the database
+        cursor.execute('INSERT INTO services (service_name) VALUES (?)',
+                       (service_name,))
+        conn.commit()
+
+        # Close the add tenant window
+        add_service_window.destroy()
+
+    # Create a submit button
+    submit_button = ttk.Button(add_service_window, text="Submit", command=submit_service)
+    submit_button.pack(pady=(10, 0))
+
 
 def show_welcome_screen(username):
     # Clear the login screen
@@ -457,6 +543,14 @@ def show_welcome_screen(username):
     # Create a button to add a new tenancy
     add_tenancy_button = ttk.Button(button_frame, text="Add Tenancy", command=add_tenancy)
     add_tenancy_button.pack(side='left', padx=(0, 10))  # Add horizontal padding
+
+    # Add a button to view service mappings
+    view_service_mappings_button = ttk.Button(button_frame, text="View Service Mappings", command=show_service_mappings_screen)
+    view_service_mappings_button.pack(side='left', padx=(0, 10))  # Add horizontal padding
+
+    # Add the add_service button to the admin screen
+    add_service_mapping_button = ttk.Button(button_frame, text="Add Service Mapping", command=add_service_mapping)
+    add_service_mapping_button.pack(side='left', padx=(0, 10))  # Add horizontal padding
 
     # Create the logout button
     logout_button = ttk.Button(root, text="Logout", command=logout)
@@ -749,41 +843,88 @@ def show_tenancies_screen():
     # Bind the configure event to the content frame
     content_inside_canvas.bind('<Configure>', on_content_configure)
 
+# Function to display service mappings
+def show_service_mappings_screen():
+    # Clear the service mappings screen
+    for widget in root.winfo_children():
+        widget.destroy()
 
+    # Create a label for the service mappings screen
+    service_mappings_label = tk.Label(root, text="Service Mappings:", font=("Helvetica", 24), bg='#3652AD')
+    service_mappings_label.pack(pady=20)
 
+    # Create a frame for the images and text
+    content_frame = tk.Frame(root, bg='#3652AD')
+    content_frame.pack(expand=True, fill='both')
 
+    # Create a canvas to hold the content and scrollbar
+    canvas = tk.Canvas(content_frame, bg='#3652AD')
+    canvas.pack(side='left', fill='both', expand=True)
 
-# def show_tenancies_screen():
-#     # Fetch tenancy records from the database
-#     cursor.execute('SELECT * FROM tenancy_mapping')
-#     tenancies = cursor.fetchall()
-#
-#     # Create a new window to display the tenancy records
-#     view_tenancies_window = tk.Toplevel(root)
-#     view_tenancies_window.title("Tenancy Records")
-#
-#     # Create a treeview to display the records
-#     treeview = ttk.Treeview(view_tenancies_window, columns=("Mapping ID", "Property ID", "Tenant ID", "Start Date", "End Date"), show="headings")
-#     treeview.pack(fill='both', expand=True)
-#
-#     # Define column headings
-#     treeview.heading("Mapping ID", text="Mapping ID")
-#     treeview.heading("Property ID", text="Property ID")
-#     treeview.heading("Tenant ID", text="Tenant ID")
-#     treeview.heading("Start Date", text="Start Date")
-#     treeview.heading("End Date", text="End Date")
-#
-#     # Insert tenancy records into the treeview
-#     for tenancy in tenancies:
-#         treeview.insert("", "end", values=tenancy)
-#
-#     # Function to close the view tenancies window
-#     def close_window():
-#         view_tenancies_window.destroy()
-#
-#     # Create a close button
-#     close_button = ttk.Button(view_tenancies_window, text="Close", command=close_window)
-#     close_button.pack(pady=(10, 0))
+    # Add a scrollbar to the canvas
+    scrollbar = ttk.Scrollbar(content_frame, orient=VERTICAL, command=canvas.yview)
+    scrollbar.pack(side='right', fill='y')
+
+    # Configure the canvas to use the scrollbar
+    canvas.configure(yscrollcommand=scrollbar.set)
+    canvas.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
+
+    # Bind the mouse wheel events to the canvas
+    canvas.bind_all("<MouseWheel>", lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
+    canvas.bind_all("<Button-4>", lambda event: canvas.yview_scroll(-1, "units"))
+    canvas.bind_all("<Button-5>", lambda event: canvas.yview_scroll(1, "units"))
+
+    # Create a frame inside the canvas for the content
+    content_inside_canvas = tk.Frame(canvas, bg='#3652AD')
+
+    # Add the content frame to the canvas
+    canvas.create_window((0, 0), window=content_inside_canvas, anchor='nw')
+
+    # Fetch service mappings from the database
+    cursor.execute('''
+        SELECT sm.service_mapping_id, s.service_name, p.property_name, sm.last_serviced_date, sm.next_service_date
+        FROM service_mapping sm
+        JOIN services s ON sm.service_id = s.service_id
+        JOIN properties p ON sm.property_id = p.property_id
+    ''')
+    service_mappings = cursor.fetchall()
+
+    # Display service mappings on the screen
+    for i, mapping in enumerate(service_mappings):
+        mapping_id, service_name, property_name, last_serviced_date, next_service_date = mapping
+
+        try:
+            # Convert the start_date string to a datetime object
+            last_serviced_date = datetime.strptime(last_serviced_date.split(' ')[0], "%Y-%m-%d")
+            next_service_date = datetime.strptime(next_service_date.split(' ')[0], "%Y-%m-%d")
+            # Format the start_date to be more readable
+            formatted_last_serviced_date = last_serviced_date.strftime("%B %d, %Y")
+            formatted_next_service_date = next_service_date.strftime("%B %d, %Y")
+        except ValueError:
+            # Handle the case where the date format is incorrect
+            formatted_date = "Invalid Date Format"
+
+        # Create a formatted string for the service mapping details
+        mapping_details = f"Service: {service_name}\nProperty: {property_name}\nLast Serviced: {formatted_last_serviced_date}\nNext Service: {formatted_next_service_date}"
+
+        # Create a label for the text block
+        text_label = tk.Label(content_inside_canvas, text=mapping_details, font=("Helvetica", 14), bg='#3652AD', wraplength=400)
+        text_label.pack(pady=(0, 20))  # Align to the top and wrap the text
+
+    # Create the back to welcome screen button
+    back_button = ttk.Button(root, text="Home", command=lambda: show_welcome_screen(username))
+    back_button.place(relx=1.0, rely=0.0, anchor='ne', x=-100, y=10)
+
+    # Create the logout button after packing the property list
+    logout_button = ttk.Button(root, text="Logout", command=logout)
+    logout_button.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=10)
+
+    # Function to update the scrollregion of the canvas
+    def on_content_configure(event):
+        canvas.configure(scrollregion=canvas.bbox('all'))
+
+    # Bind the configure event to the content frame
+    content_inside_canvas.bind('<Configure>', on_content_configure)
 
 def add_tenancy():
     # Create a new window for adding a tenancy
@@ -854,6 +995,81 @@ def add_tenancy():
     # Create a submit button
     submit_button = ttk.Button(add_tenancy_window, text="Submit", command=submit_tenancy)
     submit_button.pack(pady=(10, 0))
+
+def add_service_mapping():
+    # Create a new window for adding a service
+    add_service_window = tk.Toplevel(root)
+    add_service_window.title("Add Service")
+
+    # Fetch service names from the database
+    cursor.execute('SELECT service_name FROM services')
+    service_names = cursor.fetchall()
+
+    # Create a dropdown for service names
+    service_name_label = ttk.Label(add_service_window, text="Service Name:")
+    service_name_label.pack(pady=(10, 5))
+    service_name_dropdown = ttk.Combobox(add_service_window, values=[row[0] for row in service_names])
+    service_name_dropdown.pack(pady=(0, 10))
+
+    # Fetch property IDs from the database
+    cursor.execute('SELECT property_id FROM properties')
+    property_ids = cursor.fetchall()
+
+    # Create a dropdown for property IDs
+    property_id_label = ttk.Label(add_service_window, text="Property ID:")
+    property_id_label.pack(pady=(0, 5))
+    property_id_dropdown = ttk.Combobox(add_service_window, values=[str(row[0]) for row in property_ids])
+    property_id_dropdown.pack(pady=(0, 10))
+
+    # Create entry fields for last serviced date and next service date
+    last_serviced_date_label = ttk.Label(add_service_window, text="Last Serviced Date (YYYY-MM-DD):")
+    last_serviced_date_label.pack(pady=(0, 5))
+    last_serviced_date_entry = ttk.Entry(add_service_window)
+    last_serviced_date_entry.pack(pady=(0, 10))
+
+    next_service_date_label = ttk.Label(add_service_window, text="Next Service Date (YYYY-MM-DD):")
+    next_service_date_label.pack(pady=(0, 5))
+    next_service_date_entry = ttk.Entry(add_service_window)
+    next_service_date_entry.pack(pady=(0, 10))
+
+    # Function to add the service to the database
+    def submit_service():
+        service_name = service_name_dropdown.get()
+        property_id = property_id_dropdown.get()
+        last_serviced_date = last_serviced_date_entry.get()
+        next_service_date = next_service_date_entry.get()
+
+        # Validate the input
+        if not service_name or not property_id or not last_serviced_date or not next_service_date:
+            messagebox.showerror("Error", "All fields are required.")
+            return
+
+        try:
+            # Convert the last_serviced_date and next_service_date strings to date objects
+            last_serviced_date = datetime.strptime(last_serviced_date, "%Y-%m-%d")
+            next_service_date = datetime.strptime(next_service_date, "%Y-%m-%d")
+        except ValueError:
+            messagebox.showerror("Error", "Dates must be in the format YYYY-MM-DD.")
+            return
+
+        # Insert the service into the database
+        cursor.execute('''
+            INSERT INTO service_mapping (service_id, property_id, last_serviced_date, next_service_date)
+            SELECT s.service_id, ?, ?, ?
+            FROM services s
+            WHERE s.service_name = ?
+        ''', (property_id, last_serviced_date, next_service_date, service_name))
+        conn.commit()
+
+        # Close the add service window
+        add_service_window.destroy()
+
+    # Create a submit button
+    submit_button = ttk.Button(add_service_window, text="Submit", command=submit_service)
+    submit_button.pack(pady=(10, 0))
+
+
+
 def logout():
     # Clear the welcome screen
     for widget in root.winfo_children():
