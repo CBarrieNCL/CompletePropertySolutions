@@ -7,7 +7,7 @@ from hashlib import sha256
 from datetime import datetime
 
 # Database setup
-conn = sqlite3.connect('users.db')
+conn = sqlite3.connect('cps.db')
 cursor = conn.cursor()
 
 # Create tables if they don't exist
@@ -40,6 +40,17 @@ CREATE TABLE IF NOT EXISTS tenants (
     tenant_name TEXT NOT NULL,
     gender TEXT NOT NULL,
     age INTEGER NOT NULL
+)
+''')
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS tenancy_mapping (
+    tennancy_mapping_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    property_id INTEGER NOT NULL,
+    tenant_id INTEGER NOT NULL,
+    start_date TEXT NOT NULL,
+    end_date TEXT,
+    FOREIGN KEY (property_id) REFERENCES properties(property_id),
+    FOREIGN KEY (tenant_id) REFERENCES tenants(tenant_id)
 )
 ''')
 conn.commit()
@@ -275,16 +286,16 @@ def add_property():
     def submit_property():
         property_name = property_name_entry.get()
         landlord_name = landlord_name_entry.get()
-        next_available_date_str = next_available_date_entry.get()
+        next_available_date = next_available_date_entry.get()
 
         # Validate the input
-        if not property_name or not landlord_name or not next_available_date_str:
+        if not property_name or not landlord_name or not next_available_date:
             messagebox.showerror("Error", "All fields are required.")
             return
 
         try:
             # Convert the next_available_date string to a datetime object
-            next_available_date = datetime.strptime(next_available_date_str, "%Y-%m-%d")
+            next_available_date = datetime.strptime(next_available_date, "%Y-%m-%d")
         except ValueError:
             messagebox.showerror("Error", "Invalid date format. Please use YYYY-MM-DD.")
             return
@@ -438,6 +449,14 @@ def show_welcome_screen(username):
     # Create the "View Tenants" button
     view_tenants_button = ttk.Button(button_frame, text="View Tenants", command=show_tenants_screen)
     view_tenants_button.pack(side='left', padx=(0, 10))  # Add horizontal padding
+
+    # Create a button to view tenancies
+    view_tenancies_button = ttk.Button(button_frame, text="View Tenancies", command=show_tenancies_screen)
+    view_tenancies_button.pack(side='left', padx=(0, 10))  # Add horizontal padding
+
+    # Create a button to add a new tenancy
+    add_tenancy_button = ttk.Button(button_frame, text="Add Tenancy", command=add_tenancy)
+    add_tenancy_button.pack(side='left', padx=(0, 10))  # Add horizontal padding
 
     # Create the logout button
     logout_button = ttk.Button(root, text="Logout", command=logout)
@@ -653,6 +672,188 @@ def show_tenants_screen():
     content_inside_canvas.bind('<Configure>', on_content_configure)
 
 
+def show_tenancies_screen():
+    # Clear the tenants screen
+    for widget in root.winfo_children():
+        widget.destroy()
+
+    # Create a label for the tenants screen
+    tenants_label = tk.Label(root, text="Tenancies:", font=("Helvetica", 24), bg='#3652AD')
+    tenants_label.pack(pady=20)
+
+    # Create a frame for the images and text
+    content_frame = tk.Frame(root, bg='#3652AD')
+    content_frame.pack(expand=True, fill='both')
+
+    # Create a canvas to hold the content and scrollbar
+    canvas = tk.Canvas(content_frame, bg='#3652AD')
+    canvas.pack(side='left', fill='both', expand=True)
+
+    # Add a scrollbar to the canvas
+    scrollbar = ttk.Scrollbar(content_frame, orient=VERTICAL, command=canvas.yview)
+    scrollbar.pack(side='right', fill='y')
+
+    # Configure the canvas to use the scrollbar
+    canvas.configure(yscrollcommand=scrollbar.set)
+    canvas.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
+
+    # Bind the mouse wheel events to the canvas
+    canvas.bind_all("<MouseWheel>", lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
+    canvas.bind_all("<Button-4>", lambda event: canvas.yview_scroll(-1, "units"))
+    canvas.bind_all("<Button-5>", lambda event: canvas.yview_scroll(1, "units"))
+
+    # Create a frame inside the canvas for the content
+    content_inside_canvas = tk.Frame(canvas, bg='#3652AD')
+
+    # Add the content frame to the canvas
+    canvas.create_window((0, 0), window=content_inside_canvas, anchor='nw')
+
+    # Fetch tenancy records from the database
+    cursor.execute('SELECT property_id, tenant_id, start_date, end_date FROM tenancy_mapping')
+    tenancies = cursor.fetchall()
+
+    # Display tenants on the screen
+    for i, tenancy in enumerate(tenancies):
+        property_id, tenant_id, start_date, end_date = tenancy
+
+        try:
+            # Convert the start_date string to a datetime object
+            start_date = datetime.strptime(start_date.split(' ')[0], "%Y-%m-%d")
+            end_date = datetime.strptime(end_date.split(' ')[0], "%Y-%m-%d")
+        # Format the start_date to be more readable
+            formatted_start_date = start_date.strftime("%B %d, %Y")
+            formatted_end_date = end_date.strftime("%B %d, %Y")
+        except ValueError:
+            # Handle the case where the date format is incorrect
+            formatted_date = "Invalid Date Format"
+
+        # Create a formatted string for the tenancy details
+        tenancy_details = f"Property Id: {property_id}\nTenant ID: {tenant_id}\nStart Date: {formatted_start_date}\nEnd Date: {formatted_end_date}"
+
+        # Create a label for the text block
+        text_label = tk.Label(content_inside_canvas, text=tenancy_details, font=("Helvetica", 14), bg='#3652AD', wraplength=400)
+        text_label.pack(pady=(0, 20))  # Align to the top and wrap the text
+
+    # Create the back to welcome screen button
+    back_button = ttk.Button(root, text="Home", command=lambda: show_welcome_screen(username))
+    back_button.place(relx=1.0, rely=0.0, anchor='ne', x=-100, y=10)
+
+    # Create the logout button after packing the property list
+    logout_button = ttk.Button(root, text="Logout", command=logout)
+    logout_button.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=10)
+
+    # Function to update the scrollregion of the canvas
+    def on_content_configure(event):
+        canvas.configure(scrollregion=canvas.bbox('all'))
+
+    # Bind the configure event to the content frame
+    content_inside_canvas.bind('<Configure>', on_content_configure)
+
+
+
+
+
+# def show_tenancies_screen():
+#     # Fetch tenancy records from the database
+#     cursor.execute('SELECT * FROM tenancy_mapping')
+#     tenancies = cursor.fetchall()
+#
+#     # Create a new window to display the tenancy records
+#     view_tenancies_window = tk.Toplevel(root)
+#     view_tenancies_window.title("Tenancy Records")
+#
+#     # Create a treeview to display the records
+#     treeview = ttk.Treeview(view_tenancies_window, columns=("Mapping ID", "Property ID", "Tenant ID", "Start Date", "End Date"), show="headings")
+#     treeview.pack(fill='both', expand=True)
+#
+#     # Define column headings
+#     treeview.heading("Mapping ID", text="Mapping ID")
+#     treeview.heading("Property ID", text="Property ID")
+#     treeview.heading("Tenant ID", text="Tenant ID")
+#     treeview.heading("Start Date", text="Start Date")
+#     treeview.heading("End Date", text="End Date")
+#
+#     # Insert tenancy records into the treeview
+#     for tenancy in tenancies:
+#         treeview.insert("", "end", values=tenancy)
+#
+#     # Function to close the view tenancies window
+#     def close_window():
+#         view_tenancies_window.destroy()
+#
+#     # Create a close button
+#     close_button = ttk.Button(view_tenancies_window, text="Close", command=close_window)
+#     close_button.pack(pady=(10, 0))
+
+def add_tenancy():
+    # Create a new window for adding a tenancy
+    add_tenancy_window = tk.Toplevel(root)
+    add_tenancy_window.title("Add Tenancy")
+
+    # Fetch property IDs from the database
+    cursor.execute('SELECT property_id FROM properties')
+    property_ids = cursor.fetchall()
+
+    # Create a dropdown for property IDs
+    property_id_label = ttk.Label(add_tenancy_window, text="Property ID:")
+    property_id_label.pack(pady=(10, 5))
+    property_id_dropdown = ttk.Combobox(add_tenancy_window, values=[str(row[0]) for row in property_ids])
+    property_id_dropdown.pack(pady=(0, 10))
+
+    # Fetch tenant IDs from the database
+    cursor.execute('SELECT tenant_id FROM tenants')
+    tenant_ids = cursor.fetchall()
+
+    # Create a dropdown for tenant IDs
+    tenant_id_label = ttk.Label(add_tenancy_window, text="Tenant ID:")
+    tenant_id_label.pack(pady=(0, 5))
+    tenant_id_dropdown = ttk.Combobox(add_tenancy_window, values=[str(row[0]) for row in tenant_ids])
+    tenant_id_dropdown.pack(pady=(0, 10))
+
+    # Create entry fields for start date and end date
+    start_date_label = ttk.Label(add_tenancy_window, text="Start Date (YYYY-MM-DD):")
+    start_date_label.pack(pady=(0, 5))
+    start_date_entry = ttk.Entry(add_tenancy_window)
+    start_date_entry.pack(pady=(0, 10))
+
+    end_date_label = ttk.Label(add_tenancy_window, text="End Date (YYYY-MM-DD):")
+    end_date_label.pack(pady=(0, 5))
+    end_date_entry = ttk.Entry(add_tenancy_window)
+    end_date_entry.pack(pady=(0, 10))
+
+    # Function to add the tenancy to the database
+    def submit_tenancy():
+        property_id = property_id_dropdown.get()
+        tenant_id = tenant_id_dropdown.get()
+        start_date = start_date_entry.get()
+        end_date = end_date_entry.get()
+
+        # Validate the input
+        if not property_id or not tenant_id or not start_date:
+            messagebox.showerror("Error", "Property ID, Tenant ID, and Start Date are required.")
+            return
+
+        try:
+            # Convert the start and end dates to date objects
+            start_date = datetime.strptime(start_date, "%Y-%m-%d")
+            end_date = datetime.strptime(end_date, "%Y-%m-%d") if end_date else None
+        except ValueError:
+            messagebox.showerror("Error", "Dates must be in the format YYYY-MM-DD.")
+            return
+
+        # Insert the tenancy into the database
+        cursor.execute('''
+            INSERT INTO tenancy_mapping (property_id, tenant_id, start_date, end_date)
+            VALUES (?, ?, ?, ?)
+        ''', (property_id, tenant_id, start_date, end_date))
+        conn.commit()
+
+        # Close the add tenancy window
+        add_tenancy_window.destroy()
+
+    # Create a submit button
+    submit_button = ttk.Button(add_tenancy_window, text="Submit", command=submit_tenancy)
+    submit_button.pack(pady=(10, 0))
 def logout():
     # Clear the welcome screen
     for widget in root.winfo_children():
