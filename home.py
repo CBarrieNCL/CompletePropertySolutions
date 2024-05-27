@@ -26,6 +26,14 @@ CREATE TABLE IF NOT EXISTS properties (
     next_available_date TEXT NOT NULL
 )
 ''')
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS landlords (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    landlord_name TEXT NOT NULL,
+    gender TEXT NOT NULL,
+    age INTEGER NOT NULL
+)
+''')
 conn.commit()
 
 def hash_password(password):
@@ -82,9 +90,21 @@ def show_admin_screen():
     display_properties_button = ttk.Button(root, text="Display Property Records", command=display_property_records)
     display_properties_button.pack(pady=(10, 0))
 
+    # Create a button to display landlord records
+    display_landlords_button = ttk.Button(root, text="Display Landlord Records", command=display_landlord_records)
+    display_landlords_button.pack(pady=(10, 0))
+
     # Create a button to add a new property
     add_property_button = ttk.Button(root, text="Add Property", command=add_property)
     add_property_button.pack(pady=(10, 0))
+
+    # Create a button to add a new landlord
+    add_landlord_button = ttk.Button(root, text="Add Landlord", command=add_landlord)
+    add_landlord_button.pack(pady=(10, 0))
+
+    # Create the back to welcome screen button
+    back_button = ttk.Button(root, text="Home", command=lambda: show_welcome_screen(username))
+    back_button.place(relx=1.0, rely=0.0, anchor='ne', x=-100, y=10)
 
     # Create the logout button
     logout_button = ttk.Button(root, text="Logout", command=logout)
@@ -152,6 +172,37 @@ def display_property_records():
     close_button = ttk.Button(display_properties_window, text="Close", command=close_window)
     close_button.pack(pady=(10, 0))
 
+def display_landlord_records():
+    # Fetch landlord records from the database
+    cursor.execute('SELECT * FROM landlords')
+    landlords = cursor.fetchall()
+
+    # Create a new window to display the landlord records
+    display_landlords_window = tk.Toplevel(root)
+    display_landlords_window.title("Landlord Records")
+
+    # Create a treeview to display the records
+    treeview = ttk.Treeview(display_landlords_window, columns=("ID", "Landlord Name", "Gender", "Age"), show="headings")
+    treeview.pack(fill='both', expand=True)
+
+    # Define column headings
+    treeview.heading("ID", text="ID")
+    treeview.heading("Landlord Name", text="Landlord Name")
+    treeview.heading("Gender", text="Gender")
+    treeview.heading("Age", text="Age")
+
+    # Insert landlord records into the treeview
+    for landlord in landlords:
+        treeview.insert("", "end", values=landlord)
+
+    # Function to close the display landlords window
+    def close_window():
+        display_landlords_window.destroy()
+
+    # Create a close button
+    close_button = ttk.Button(display_landlords_window, text="Close", command=close_window)
+    close_button.pack(pady=(10, 0))
+
 def add_property():
     # Create a new window for adding a property
     add_property_window = tk.Toplevel(root)
@@ -203,6 +254,62 @@ def add_property():
     submit_button = ttk.Button(add_property_window, text="Submit", command=submit_property)
     submit_button.pack(pady=(10, 0))
 
+def add_landlord():
+    # Create a new window for adding a landlord
+    add_landlord_window = tk.Toplevel(root)
+    add_landlord_window.title("Add Landlord")
+
+    # Create entry fields for landlord name, gender, and age
+    landlord_name_label = ttk.Label(add_landlord_window, text="Landlord Name:")
+    landlord_name_label.pack(pady=(10, 5))
+    landlord_name_entry = ttk.Entry(add_landlord_window)
+    landlord_name_entry.pack(pady=(0, 10))
+
+    gender_label = ttk.Label(add_landlord_window, text="Gender (M/F/O):")
+    gender_label.pack(pady=(0, 5))
+    gender_entry = ttk.Entry(add_landlord_window)
+    gender_entry.pack(pady=(0, 10))
+
+    age_label = ttk.Label(add_landlord_window, text="Age:")
+    age_label.pack(pady=(0, 5))
+    age_entry = ttk.Entry(add_landlord_window)
+    age_entry.pack(pady=(0, 10))
+
+    # Function to add the landlord to the database
+    def submit_landlord():
+        landlord_name = landlord_name_entry.get()
+        gender = gender_entry.get().upper()  # Convert to uppercase to allow for case-insensitive input
+        age = age_entry.get()
+
+        # Validate the input
+        if not landlord_name or not gender or not age:
+            messagebox.showerror("Error", "All fields are required.")
+            return
+
+        # Validate gender input
+        if gender not in ['M', 'F', 'O']:
+            messagebox.showerror("Error", "Gender must be 'M', 'F', or 'O'.")
+            return
+
+        try:
+            # Convert the age to an integer
+            age = int(age)
+        except ValueError:
+            messagebox.showerror("Error", "Age must be a number.")
+            return
+
+        # Insert the landlord into the database
+        cursor.execute('INSERT INTO landlords (landlord_name, gender, age) VALUES (?, ?, ?)',
+                       (landlord_name, gender, age))
+        conn.commit()
+
+        # Close the add landlord window
+        add_landlord_window.destroy()
+
+    # Create a submit button
+    submit_button = ttk.Button(add_landlord_window, text="Submit", command=submit_landlord)
+    submit_button.pack(pady=(10, 0))
+
 
 def show_welcome_screen(username):
     # Clear the login screen
@@ -210,7 +317,7 @@ def show_welcome_screen(username):
         widget.destroy()
 
     # Create welcome screen
-    welcome_label = tk.Label(root, text=f"Welcome, {username}!", font=("Helvetica", 24), bg='#3652AD')
+    welcome_label = tk.Label(root, text=f"Welcome, {username.capitalize()}!", font=("Helvetica", 24), bg='#3652AD')
     welcome_label.pack(pady=20)
 
     # Create a frame for the buttons
@@ -306,13 +413,13 @@ def show_properties_screen():
     content_inside_canvas.bind('<Configure>', on_content_configure)
 
 def show_landlords_screen():
-    # Clear the welcome screen
+    # Clear the properties screen
     for widget in root.winfo_children():
         widget.destroy()
 
-    # Create a label for the landlords screen
-    landlords_label = tk.Label(root, text="Landlords:", font=("Helvetica", 24), bg='#3652AD')
-    landlords_label.pack(pady=20)
+    # Create a label for the properties screen
+    properties_label = tk.Label(root, text="Landlords:", font=("Helvetica", 24), bg='#3652AD')
+    properties_label.pack(pady=20)
 
     # Create a frame for the images and text
     content_frame = tk.Frame(root, bg='#3652AD')
@@ -341,36 +448,20 @@ def show_landlords_screen():
     # Add the content frame to the canvas
     canvas.create_window((0, 0), window=content_inside_canvas, anchor='nw')
 
-    # Load and display images with text blocks
-    landlords_info = [
-        {"path": "test.png", "text": "Landlord 1 Information"},
-        {"path": "test.png", "text": "Landlord 2 Information"},
-        {"path": "test.png", "text": "Landlord 3 Information"},
-        {"path": "test.png", "text": "Landlord 4 Information"},
-        {"path": "test.png", "text": "Landlord 5 Information"},
-        {"path": "test.png", "text": "Landlord 6 Information"}
-    ]
+    # Fetch landlords from the database
+    cursor.execute('SELECT landlord_name, gender, age FROM landlords')
+    landlords = cursor.fetchall()
 
-    for i, info in enumerate(landlords_info):
-        # Load the image
-        image = Image.open(info["path"])
+    # Display landlords on the screen
+    for i, landlord in enumerate(landlords):
+        landlord_name, gender, age = landlord
 
-        # Calculate the desired height based on a percentage of the screen height
-        desired_height = int(root.winfo_screenheight() * 0.2)  # 20% of the screen height
-        aspect_ratio = image.width / image.height
-        new_width = int(aspect_ratio * desired_height)
-        image = image.resize((new_width, desired_height), Image.Resampling.LANCZOS)
-
-        photo = ImageTk.PhotoImage(image)
-
-        # Create a label for the image
-        image_label = tk.Label(content_inside_canvas, image=photo, bg='#3652AD')
-        image_label.image = photo  # Keep a reference to avoid garbage collection
-        image_label.grid(row=i, column=0, padx=(0, 20), sticky='w')  # Add padding to the left
+        # Create a formatted string for the landlord details
+        landlord_details = f"Name: {landlord_name}\nGender: {gender}\nAge: {age}"
 
         # Create a label for the text block
-        text_label = tk.Label(content_inside_canvas, text=info["text"], font=("Helvetica", 14), bg='#3652AD', wraplength=400)
-        text_label.grid(row=i, column=1, sticky='w')  # Align to the left and wrap the text
+        text_label = tk.Label(content_inside_canvas, text=landlord_details, font=("Helvetica", 14), bg='#3652AD', wraplength=400)
+        text_label.pack(pady=(0, 20))  # Align to the top and wrap the text
 
     # Create the back to welcome screen button
     back_button = ttk.Button(root, text="Home", command=lambda: show_welcome_screen(username))
