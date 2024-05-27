@@ -23,6 +23,7 @@ def hash_password(password):
     return sha256(password.encode()).hexdigest()
 
 def login():
+    global username, password
     username = username_entry.get()
     password = hash_password(password_entry.get())
 
@@ -49,18 +50,6 @@ def login():
     else:
         messagebox.showerror("Error", "Invalid username or password.")
 
-# def show_admin_screen():
-#     # Create admin screen
-#     admin_label = tk.Label(root, text="Welcome, Admin!", font=("Helvetica", 24), bg='#3652AD')
-#     admin_label.pack(pady=20)
-#
-#     # Add some sample text
-#     text_label = tk.Label(root, text="This is the admin screen with some sample text.", font=("Helvetica", 14), bg='#3652AD')
-#     text_label.pack(pady=(30, 0))  # Add padding to the top
-#
-#     # Create the logout button after packing the property list
-#     logout_button = ttk.Button(root, text="Logout", command=logout)
-#     logout_button.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=10)
 
 def show_admin_screen():
     # Clear the root window
@@ -115,10 +104,41 @@ def display_user_records():
     close_button = ttk.Button(records_window, text="Close", command=close_records_window)
     close_button.pack(pady=(10, 0))
 
+
 def show_welcome_screen(username):
+    # Clear the login screen
+    for widget in root.winfo_children():
+        widget.destroy()
+
     # Create welcome screen
-    welcome_label = tk.Label(root, text=f"Welcome, {username.capitalize()}!", font=("Helvetica", 24), bg='#3652AD')
+    welcome_label = tk.Label(root, text=f"Welcome, {username}!", font=("Helvetica", 24), bg='#3652AD')
     welcome_label.pack(pady=20)
+
+    # Create a frame for the buttons
+    button_frame = tk.Frame(root, bg='#3652AD')
+    button_frame.pack(pady=(5, 20))  # Add vertical padding
+
+    # Create the "View Properties" button
+    view_properties_button = ttk.Button(button_frame, text="View Properties", command=show_properties_screen)
+    view_properties_button.pack(side='left', padx=(0, 10))  # Add horizontal padding
+
+    # Create the "View Landlords" button
+    view_landlords_button = ttk.Button(button_frame, text="View Landlords", command=show_landlords_screen)
+    view_landlords_button.pack(side='left', padx=(10, 0))  # Add horizontal padding
+
+    # Create the logout button
+    logout_button = ttk.Button(root, text="Logout", command=logout)
+    logout_button.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=10)
+
+
+def show_properties_screen():
+    # Clear the welcome screen
+    for widget in root.winfo_children():
+        widget.destroy()
+
+    # Create a label for the properties screen
+    properties_label = tk.Label(root, text="Properties:", font=("Helvetica", 24), bg='#3652AD')
+    properties_label.pack(pady=20)
 
     # Create a frame for the images and text
     content_frame = tk.Frame(root, bg='#3652AD')
@@ -178,6 +198,10 @@ def show_welcome_screen(username):
         text_label = tk.Label(content_inside_canvas, text=info["text"], font=("Helvetica", 14), bg='#3652AD', wraplength=400)
         text_label.grid(row=i, column=1, sticky='w')  # Align to the left and wrap the text
 
+    # Create the back to welcome screen button
+    back_button = ttk.Button(root, text="Home", command=lambda: show_welcome_screen(username))
+    back_button.place(relx=1.0, rely=0.0, anchor='ne', x=-100, y=10)
+
     # Create the logout button after packing the property list
     logout_button = ttk.Button(root, text="Logout", command=logout)
     logout_button.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=10)
@@ -189,7 +213,87 @@ def show_welcome_screen(username):
     # Bind the configure event to the content frame
     content_inside_canvas.bind('<Configure>', on_content_configure)
 
+def show_landlords_screen():
+    # Clear the welcome screen
+    for widget in root.winfo_children():
+        widget.destroy()
 
+    # Create a label for the landlords screen
+    landlords_label = tk.Label(root, text="Landlords:", font=("Helvetica", 24), bg='#3652AD')
+    landlords_label.pack(pady=20)
+
+    # Create a frame for the images and text
+    content_frame = tk.Frame(root, bg='#3652AD')
+    content_frame.pack(expand=True, fill='both')
+
+    # Create a canvas to hold the content and scrollbar
+    canvas = tk.Canvas(content_frame, bg='#3652AD')
+    canvas.pack(side='left', fill='both', expand=True)
+
+    # Add a scrollbar to the canvas
+    scrollbar = ttk.Scrollbar(content_frame, orient=VERTICAL, command=canvas.yview)
+    scrollbar.pack(side='right', fill='y')
+
+    # Configure the canvas to use the scrollbar
+    canvas.configure(yscrollcommand=scrollbar.set)
+    canvas.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
+
+    # Bind the mouse wheel events to the canvas
+    canvas.bind_all("<MouseWheel>", lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
+    canvas.bind_all("<Button-4>", lambda event: canvas.yview_scroll(-1, "units"))
+    canvas.bind_all("<Button-5>", lambda event: canvas.yview_scroll(1, "units"))
+
+    # Create a frame inside the canvas for the content
+    content_inside_canvas = tk.Frame(canvas, bg='#3652AD')
+
+    # Add the content frame to the canvas
+    canvas.create_window((0, 0), window=content_inside_canvas, anchor='nw')
+
+    # Load and display images with text blocks
+    landlords_info = [
+        {"path": "test.png", "text": "Landlord 1 Information"},
+        {"path": "test.png", "text": "Landlord 2 Information"},
+        {"path": "test.png", "text": "Landlord 3 Information"},
+        {"path": "test.png", "text": "Landlord 4 Information"},
+        {"path": "test.png", "text": "Landlord 5 Information"},
+        {"path": "test.png", "text": "Landlord 6 Information"}
+    ]
+
+    for i, info in enumerate(landlords_info):
+        # Load the image
+        image = Image.open(info["path"])
+
+        # Calculate the desired height based on a percentage of the screen height
+        desired_height = int(root.winfo_screenheight() * 0.2)  # 20% of the screen height
+        aspect_ratio = image.width / image.height
+        new_width = int(aspect_ratio * desired_height)
+        image = image.resize((new_width, desired_height), Image.Resampling.LANCZOS)
+
+        photo = ImageTk.PhotoImage(image)
+
+        # Create a label for the image
+        image_label = tk.Label(content_inside_canvas, image=photo, bg='#3652AD')
+        image_label.image = photo  # Keep a reference to avoid garbage collection
+        image_label.grid(row=i, column=0, padx=(0, 20), sticky='w')  # Add padding to the left
+
+        # Create a label for the text block
+        text_label = tk.Label(content_inside_canvas, text=info["text"], font=("Helvetica", 14), bg='#3652AD', wraplength=400)
+        text_label.grid(row=i, column=1, sticky='w')  # Align to the left and wrap the text
+
+    # Create the back to welcome screen button
+    back_button = ttk.Button(root, text="Home", command=lambda: show_welcome_screen(username))
+    back_button.place(relx=1.0, rely=0.0, anchor='ne', x=-100, y=10)
+
+    # Create the logout button after packing the property list
+    logout_button = ttk.Button(root, text="Logout", command=logout)
+    logout_button.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=10)
+
+    # Function to update the scrollregion of the canvas
+    def on_content_configure(event):
+        canvas.configure(scrollregion=canvas.bbox('all'))
+
+    # Bind the configure event to the content frame
+    content_inside_canvas.bind('<Configure>', on_content_configure)
 
 def logout():
     # Clear the welcome screen
