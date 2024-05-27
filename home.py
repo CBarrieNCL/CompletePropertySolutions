@@ -4,17 +4,26 @@ from tkinter import messagebox, VERTICAL
 from PIL import Image, ImageTk
 import sqlite3
 from hashlib import sha256
+from datetime import datetime
 
 # Database setup
 conn = sqlite3.connect('users.db')
 cursor = conn.cursor()
 
-# Create table if it doesn't exist
+# Create tables if they don't exist
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL
+)
+''')
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS properties (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    property_name TEXT NOT NULL,
+    landlord_name TEXT NOT NULL,
+    next_available_date TEXT NOT NULL
 )
 ''')
 conn.commit()
@@ -69,6 +78,14 @@ def show_admin_screen():
     display_records_button = ttk.Button(root, text="Display User Records", command=display_user_records)
     display_records_button.pack(pady=(10, 0))
 
+    # Create a button to display property records
+    display_properties_button = ttk.Button(root, text="Display Property Records", command=display_property_records)
+    display_properties_button.pack(pady=(10, 0))
+
+    # Create a button to add a new property
+    add_property_button = ttk.Button(root, text="Add Property", command=add_property)
+    add_property_button.pack(pady=(10, 0))
+
     # Create the logout button
     logout_button = ttk.Button(root, text="Logout", command=logout)
     logout_button.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=10)
@@ -104,6 +121,88 @@ def display_user_records():
     close_button = ttk.Button(records_window, text="Close", command=close_records_window)
     close_button.pack(pady=(10, 0))
 
+def display_property_records():
+    # Retrieve all property records from the database
+    cursor.execute('SELECT * FROM properties')
+    properties = cursor.fetchall()
+
+    # Create a new window to display the property records
+    display_properties_window = tk.Toplevel(root)
+    display_properties_window.title("Property Records")
+
+    # Create a treeview to display the records
+    treeview = ttk.Treeview(display_properties_window, columns=("ID", "Property Name", "Landlord Name", "Next Available Date"), show="headings")
+    treeview.pack(fill='both', expand=True)
+
+    # Define column headings
+    treeview.heading("ID", text="ID")
+    treeview.heading("Property Name", text="Property Name")
+    treeview.heading("Landlord Name", text="Landlord Name")
+    treeview.heading("Next Available Date", text="Next Available Date")
+
+    # Insert property records into the treeview
+    for prop in properties:
+        treeview.insert("", "end", values=prop)
+
+    # Function to close the display properties window
+    def close_window():
+        display_properties_window.destroy()
+
+    # Create a close button
+    close_button = ttk.Button(display_properties_window, text="Close", command=close_window)
+    close_button.pack(pady=(10, 0))
+
+def add_property():
+    # Create a new window for adding a property
+    add_property_window = tk.Toplevel(root)
+    add_property_window.title("Add Property")
+
+    # Create entry fields for property name, landlord name, and next available date
+    property_name_label = ttk.Label(add_property_window, text="Property Name:")
+    property_name_label.pack(pady=(10, 5))
+    property_name_entry = ttk.Entry(add_property_window)
+    property_name_entry.pack(pady=(0, 10))
+
+    landlord_name_label = ttk.Label(add_property_window, text="Landlord Name:")
+    landlord_name_label.pack(pady=(0, 5))
+    landlord_name_entry = ttk.Entry(add_property_window)
+    landlord_name_entry.pack(pady=(0, 10))
+
+    next_available_date_label = ttk.Label(add_property_window, text="Next Available Date (YYYY-MM-DD):")
+    next_available_date_label.pack(pady=(0, 5))
+    next_available_date_entry = ttk.Entry(add_property_window)
+    next_available_date_entry.pack(pady=(0, 10))
+
+    # Function to add the property to the database
+    def submit_property():
+        property_name = property_name_entry.get()
+        landlord_name = landlord_name_entry.get()
+        next_available_date_str = next_available_date_entry.get()
+
+        # Validate the input
+        if not property_name or not landlord_name or not next_available_date_str:
+            messagebox.showerror("Error", "All fields are required.")
+            return
+
+        try:
+            # Convert the next_available_date string to a datetime object
+            next_available_date = datetime.strptime(next_available_date_str, "%Y-%m-%d")
+        except ValueError:
+            messagebox.showerror("Error", "Invalid date format. Please use YYYY-MM-DD.")
+            return
+
+        # Insert the property into the database
+        cursor.execute('INSERT INTO properties (property_name, landlord_name, next_available_date) VALUES (?, ?, ?)',
+                       (property_name, landlord_name, next_available_date))
+        conn.commit()
+
+        # Close the add property window
+        add_property_window.destroy()
+
+    # Create a submit button
+    submit_button = ttk.Button(add_property_window, text="Submit", command=submit_property)
+    submit_button.pack(pady=(10, 0))
+
 
 def show_welcome_screen(username):
     # Clear the login screen
@@ -132,7 +231,7 @@ def show_welcome_screen(username):
 
 
 def show_properties_screen():
-    # Clear the welcome screen
+    # Clear the properties screen
     for widget in root.winfo_children():
         widget.destroy()
 
@@ -167,35 +266,28 @@ def show_properties_screen():
     # Add the content frame to the canvas
     canvas.create_window((0, 0), window=content_inside_canvas, anchor='nw')
 
-    # Load and display images with text blocks
-    images_info = [
-        {"path": "test.png", "text": "This is the first image with some text."},
-        {"path": "test.png", "text": "This is the second image with some more text."},
-        {"path": "test.png", "text": "This is the third image with even more text."},
-        {"path": "test.png", "text": "This is the fourth image with even more text."},
-        {"path": "test.png", "text": "This is the fifth image with even more text."},
-        {"path": "test.png", "text": "This is the sixth image with even more text."}
-    ]
+    # Fetch properties from the database
+    cursor.execute('SELECT property_name, landlord_name, next_available_date FROM properties')
+    properties = cursor.fetchall()
 
-    for i, info in enumerate(images_info):
-        # Load the image
-        image = Image.open(info["path"])
+    # Display properties on the screen
+    for i, prop in enumerate(properties):
+        property_name, landlord_name, next_available_date = prop
 
-        # Calculate the desired height based on a percentage of the screen height
-        desired_height = int(root.winfo_screenheight() * 0.2)  # 20% of the screen height
-        aspect_ratio = image.width / image.height
-        new_width = int(aspect_ratio * desired_height)
-        image = image.resize((new_width, desired_height), Image.Resampling.LANCZOS)
+        try:
+            # Convert the next_available_date string to a datetime object
+            next_available_date = datetime.strptime(next_available_date.split(' ')[0], "%Y-%m-%d")
+            # Format the next_available_date to be more readable
+            formatted_date = next_available_date.strftime("%B %d, %Y")
+        except ValueError:
+            # Handle the case where the date format is incorrect
+            formatted_date = "Invalid Date Format"
 
-        photo = ImageTk.PhotoImage(image)
-
-        # Create a label for the image
-        image_label = tk.Label(content_inside_canvas, image=photo, bg='#3652AD')
-        image_label.image = photo  # Keep a reference to avoid garbage collection
-        image_label.grid(row=i, column=0, padx=(0, 20), sticky='w')  # Add padding to the left
+        # Create a formatted string for the property details
+        property_details = f"Property Name: {property_name}\nLandlord Name: {landlord_name}\nNext Available Date: {formatted_date}"
 
         # Create a label for the text block
-        text_label = tk.Label(content_inside_canvas, text=info["text"], font=("Helvetica", 14), bg='#3652AD', wraplength=400)
+        text_label = tk.Label(content_inside_canvas, text=property_details, font=("Helvetica", 14), bg='#3652AD', wraplength=400, pady=5)
         text_label.grid(row=i, column=1, sticky='w')  # Align to the left and wrap the text
 
     # Create the back to welcome screen button
