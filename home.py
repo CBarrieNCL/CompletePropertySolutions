@@ -13,14 +13,14 @@ cursor = conn.cursor()
 # Create tables if they don't exist
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL
 )
 ''')
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS properties (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    property_id INTEGER PRIMARY KEY AUTOINCREMENT,
     property_name TEXT NOT NULL,
     landlord_name TEXT NOT NULL,
     next_available_date TEXT NOT NULL
@@ -28,8 +28,16 @@ CREATE TABLE IF NOT EXISTS properties (
 ''')
 cursor.execute('''
 CREATE TABLE IF NOT EXISTS landlords (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    landlord_id INTEGER PRIMARY KEY AUTOINCREMENT,
     landlord_name TEXT NOT NULL,
+    gender TEXT NOT NULL,
+    age INTEGER NOT NULL
+)
+''')
+cursor.execute('''
+CREATE TABLE IF NOT EXISTS tenants (
+    tenant_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    tenant_name TEXT NOT NULL,
     gender TEXT NOT NULL,
     age INTEGER NOT NULL
 )
@@ -94,6 +102,10 @@ def show_admin_screen():
     display_landlords_button = ttk.Button(root, text="Display Landlord Records", command=display_landlord_records)
     display_landlords_button.pack(pady=(10, 0))
 
+    # Create a button to display tenant records
+    display_tenants_button = ttk.Button(root, text="Display Tenant Records", command=display_tenant_records)
+    display_tenants_button.pack(pady=(10, 0))
+
     # Create a button to add a new property
     add_property_button = ttk.Button(root, text="Add Property", command=add_property)
     add_property_button.pack(pady=(10, 0))
@@ -101,6 +113,10 @@ def show_admin_screen():
     # Create a button to add a new landlord
     add_landlord_button = ttk.Button(root, text="Add Landlord", command=add_landlord)
     add_landlord_button.pack(pady=(10, 0))
+
+    # Create a button to add a new tenant
+    add_tenant_button = ttk.Button(root, text="Add Tenant", command=add_tenant)
+    add_tenant_button.pack(pady=(10, 0))
 
     # Create the back to welcome screen button
     back_button = ttk.Button(root, text="Home", command=lambda: show_welcome_screen(username))
@@ -201,6 +217,37 @@ def display_landlord_records():
 
     # Create a close button
     close_button = ttk.Button(display_landlords_window, text="Close", command=close_window)
+    close_button.pack(pady=(10, 0))
+
+def display_tenant_records():
+    # Fetch tenant records from the database
+    cursor.execute('SELECT * FROM tenants')
+    tenants = cursor.fetchall()
+
+    # Create a new window to display the tenant records
+    display_tenants_window = tk.Toplevel(root)
+    display_tenants_window.title("Tenant Records")
+
+    # Create a treeview to display the records
+    treeview = ttk.Treeview(display_tenants_window, columns=("ID", "Tenant Name", "Gender", "Age"), show="headings")
+    treeview.pack(fill='both', expand=True)
+
+    # Define column headings
+    treeview.heading("ID", text="ID")
+    treeview.heading("Tenant Name", text="Tenant Name")
+    treeview.heading("Gender", text="Gender")
+    treeview.heading("Age", text="Age")
+
+    # Insert tenant records into the treeview
+    for tenant in tenants:
+        treeview.insert("", "end", values=tenant)
+
+    # Function to close the display tenants window
+    def close_window():
+        display_tenants_window.destroy()
+
+    # Create a close button
+    close_button = ttk.Button(display_tenants_window, text="Close", command=close_window)
     close_button.pack(pady=(10, 0))
 
 def add_property():
@@ -310,6 +357,62 @@ def add_landlord():
     submit_button = ttk.Button(add_landlord_window, text="Submit", command=submit_landlord)
     submit_button.pack(pady=(10, 0))
 
+def add_tenant():
+    # Create a new window for adding a tenant
+    add_tenant_window = tk.Toplevel(root)
+    add_tenant_window.title("Add Tenant")
+
+    # Create entry fields for tenant name, gender, and age
+    tenant_name_label = ttk.Label(add_tenant_window, text="Tenant Name:")
+    tenant_name_label.pack(pady=(10, 5))
+    tenant_name_entry = ttk.Entry(add_tenant_window)
+    tenant_name_entry.pack(pady=(0, 10))
+
+    gender_label = ttk.Label(add_tenant_window, text="Gender (M/F/O):")
+    gender_label.pack(pady=(0, 5))
+    gender_entry = ttk.Entry(add_tenant_window)
+    gender_entry.pack(pady=(0, 10))
+
+    age_label = ttk.Label(add_tenant_window, text="Age:")
+    age_label.pack(pady=(0, 5))
+    age_entry = ttk.Entry(add_tenant_window)
+    age_entry.pack(pady=(0, 10))
+
+    # Function to add the tenant to the database
+    def submit_tenant():
+        tenant_name = tenant_name_entry.get()
+        gender = gender_entry.get().upper()  # Convert to uppercase to allow for case-insensitive input
+        age = age_entry.get()
+
+        # Validate the input
+        if not tenant_name or not gender or not age:
+            messagebox.showerror("Error", "All fields are required.")
+            return
+
+        # Validate gender input
+        if gender not in ['M', 'F', 'O']:
+            messagebox.showerror("Error", "Gender must be 'M', 'F', or 'O'.")
+            return
+
+        try:
+            # Convert the age to an integer
+            age = int(age)
+        except ValueError:
+            messagebox.showerror("Error", "Age must be a number.")
+            return
+
+        # Insert the tenant into the database
+        cursor.execute('INSERT INTO tenants (tenant_name, gender, age) VALUES (?, ?, ?)',
+                       (tenant_name, gender, age))
+        conn.commit()
+
+        # Close the add tenant window
+        add_tenant_window.destroy()
+
+    # Create a submit button
+    submit_button = ttk.Button(add_tenant_window, text="Submit", command=submit_tenant)
+    submit_button.pack(pady=(10, 0))
+
 
 def show_welcome_screen(username):
     # Clear the login screen
@@ -330,7 +433,11 @@ def show_welcome_screen(username):
 
     # Create the "View Landlords" button
     view_landlords_button = ttk.Button(button_frame, text="View Landlords", command=show_landlords_screen)
-    view_landlords_button.pack(side='left', padx=(10, 0))  # Add horizontal padding
+    view_landlords_button.pack(side='left', padx=(0, 10))  # Add horizontal padding
+
+    # Create the "View Tenants" button
+    view_tenants_button = ttk.Button(button_frame, text="View Tenants", command=show_tenants_screen)
+    view_tenants_button.pack(side='left', padx=(0, 10))  # Add horizontal padding
 
     # Create the logout button
     logout_button = ttk.Button(root, text="Logout", command=logout)
@@ -477,6 +584,74 @@ def show_landlords_screen():
 
     # Bind the configure event to the content frame
     content_inside_canvas.bind('<Configure>', on_content_configure)
+
+
+def show_tenants_screen():
+    # Clear the tenants screen
+    for widget in root.winfo_children():
+        widget.destroy()
+
+    # Create a label for the tenants screen
+    tenants_label = tk.Label(root, text="Tenants:", font=("Helvetica", 24), bg='#3652AD')
+    tenants_label.pack(pady=20)
+
+    # Create a frame for the images and text
+    content_frame = tk.Frame(root, bg='#3652AD')
+    content_frame.pack(expand=True, fill='both')
+
+    # Create a canvas to hold the content and scrollbar
+    canvas = tk.Canvas(content_frame, bg='#3652AD')
+    canvas.pack(side='left', fill='both', expand=True)
+
+    # Add a scrollbar to the canvas
+    scrollbar = ttk.Scrollbar(content_frame, orient=VERTICAL, command=canvas.yview)
+    scrollbar.pack(side='right', fill='y')
+
+    # Configure the canvas to use the scrollbar
+    canvas.configure(yscrollcommand=scrollbar.set)
+    canvas.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
+
+    # Bind the mouse wheel events to the canvas
+    canvas.bind_all("<MouseWheel>", lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
+    canvas.bind_all("<Button-4>", lambda event: canvas.yview_scroll(-1, "units"))
+    canvas.bind_all("<Button-5>", lambda event: canvas.yview_scroll(1, "units"))
+
+    # Create a frame inside the canvas for the content
+    content_inside_canvas = tk.Frame(canvas, bg='#3652AD')
+
+    # Add the content frame to the canvas
+    canvas.create_window((0, 0), window=content_inside_canvas, anchor='nw')
+
+    # Fetch tenants from the database
+    cursor.execute('SELECT tenant_name, gender, age FROM tenants')
+    tenants = cursor.fetchall()
+
+    # Display tenants on the screen
+    for i, tenant in enumerate(tenants):
+        tenant_name, gender, age = tenant
+
+        # Create a formatted string for the tenant details
+        tenant_details = f"Name: {tenant_name}\nGender: {gender}\nAge: {age}"
+
+        # Create a label for the text block
+        text_label = tk.Label(content_inside_canvas, text=tenant_details, font=("Helvetica", 14), bg='#3652AD', wraplength=400)
+        text_label.pack(pady=(0, 20))  # Align to the top and wrap the text
+
+    # Create the back to welcome screen button
+    back_button = ttk.Button(root, text="Home", command=lambda: show_welcome_screen(username))
+    back_button.place(relx=1.0, rely=0.0, anchor='ne', x=-100, y=10)
+
+    # Create the logout button after packing the property list
+    logout_button = ttk.Button(root, text="Logout", command=logout)
+    logout_button.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=10)
+
+    # Function to update the scrollregion of the canvas
+    def on_content_configure(event):
+        canvas.configure(scrollregion=canvas.bbox('all'))
+
+    # Bind the configure event to the content frame
+    content_inside_canvas.bind('<Configure>', on_content_configure)
+
 
 def logout():
     # Clear the welcome screen
