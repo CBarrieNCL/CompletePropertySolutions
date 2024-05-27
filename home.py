@@ -26,6 +26,16 @@ def login():
     username = username_entry.get()
     password = hash_password(password_entry.get())
 
+    # Check if the user is trying to log in as the admin
+    if username == "admin" and password == hash_password("admin"):
+        # Clear the login screen
+        for widget in root.winfo_children():
+            widget.destroy()
+
+        # Show the admin screen
+        show_admin_screen()
+        return
+
     cursor.execute('SELECT * FROM users WHERE username=? AND password=?', (username, password))
     user = cursor.fetchone()
 
@@ -39,9 +49,75 @@ def login():
     else:
         messagebox.showerror("Error", "Invalid username or password.")
 
+# def show_admin_screen():
+#     # Create admin screen
+#     admin_label = tk.Label(root, text="Welcome, Admin!", font=("Helvetica", 24), bg='#3652AD')
+#     admin_label.pack(pady=20)
+#
+#     # Add some sample text
+#     text_label = tk.Label(root, text="This is the admin screen with some sample text.", font=("Helvetica", 14), bg='#3652AD')
+#     text_label.pack(pady=(30, 0))  # Add padding to the top
+#
+#     # Create the logout button after packing the property list
+#     logout_button = ttk.Button(root, text="Logout", command=logout)
+#     logout_button.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=10)
+
+def show_admin_screen():
+    # Clear the root window
+    for widget in root.winfo_children():
+        widget.destroy()
+
+    # Create admin screen
+    admin_label = tk.Label(root, text="Welcome, Admin!", font=("Helvetica", 24), bg='#3652AD')
+    admin_label.pack(pady=20)
+
+    # Add some sample text
+    sample_text = "This is the admin screen with some sample text."
+    text_label = tk.Label(root, text=sample_text, font=("Helvetica", 14), bg='#3652AD', wraplength=400)
+    text_label.pack(pady=(20, 0))  # Add padding to the top
+
+    # Create a button to display all user records
+    display_records_button = ttk.Button(root, text="Display User Records", command=display_user_records)
+    display_records_button.pack(pady=(10, 0))
+
+    # Create the logout button
+    logout_button = ttk.Button(root, text="Logout", command=logout)
+    logout_button.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=10)
+
+
+def display_user_records():
+    # Fetch all user records from the database
+    cursor.execute('SELECT * FROM users')
+    users = cursor.fetchall()
+
+    # Create a new window to display the user records
+    records_window = tk.Toplevel(root)
+    records_window.title("User Records")
+
+    # Create a treeview to display the records
+    treeview = ttk.Treeview(records_window, columns=("ID", "Username", "Password"), show="headings")
+    treeview.pack(expand=True, fill='both')
+
+    # Define the columns
+    treeview.heading("ID", text="ID")
+    treeview.heading("Username", text="Username")
+    treeview.heading("Password", text="Password")
+
+    # Insert the records into the treeview
+    for user in users:
+        treeview.insert("", "end", values=user)
+
+    # Function to close the records window
+    def close_records_window():
+        records_window.destroy()
+
+    # Add a close button to the records window
+    close_button = ttk.Button(records_window, text="Close", command=close_records_window)
+    close_button.pack(pady=(10, 0))
+
 def show_welcome_screen(username):
     # Create welcome screen
-    welcome_label = tk.Label(root, text=f"Welcome, {username}!", font=("Helvetica", 24), bg='#3652AD')
+    welcome_label = tk.Label(root, text=f"Welcome, {username.capitalize()}!", font=("Helvetica", 24), bg='#3652AD')
     welcome_label.pack(pady=20)
 
     # Create a frame for the images and text
@@ -60,6 +136,11 @@ def show_welcome_screen(username):
     canvas.configure(yscrollcommand=scrollbar.set)
     canvas.bind('<Configure>', lambda e: canvas.configure(scrollregion=canvas.bbox('all')))
 
+    # Bind the mouse wheel events to the canvas
+    canvas.bind_all("<MouseWheel>", lambda event: canvas.yview_scroll(int(-1*(event.delta/120)), "units"))
+    canvas.bind_all("<Button-4>", lambda event: canvas.yview_scroll(-1, "units"))
+    canvas.bind_all("<Button-5>", lambda event: canvas.yview_scroll(1, "units"))
+
     # Create a frame inside the canvas for the content
     content_inside_canvas = tk.Frame(canvas, bg='#3652AD')
 
@@ -70,7 +151,10 @@ def show_welcome_screen(username):
     images_info = [
         {"path": "test.png", "text": "This is the first image with some text."},
         {"path": "test.png", "text": "This is the second image with some more text."},
-        {"path": "test.png", "text": "This is the third image with even more text."}
+        {"path": "test.png", "text": "This is the third image with even more text."},
+        {"path": "test.png", "text": "This is the fourth image with even more text."},
+        {"path": "test.png", "text": "This is the fifth image with even more text."},
+        {"path": "test.png", "text": "This is the sixth image with even more text."}
     ]
 
     for i, info in enumerate(images_info):
@@ -94,8 +178,9 @@ def show_welcome_screen(username):
         text_label = tk.Label(content_inside_canvas, text=info["text"], font=("Helvetica", 14), bg='#3652AD', wraplength=400)
         text_label.grid(row=i, column=1, sticky='w')  # Align to the left and wrap the text
 
+    # Create the logout button after packing the property list
     logout_button = ttk.Button(root, text="Logout", command=logout)
-    logout_button.pack(pady=20)
+    logout_button.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=10)
 
     # Function to update the scrollregion of the canvas
     def on_content_configure(event):
