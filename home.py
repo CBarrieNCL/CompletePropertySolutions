@@ -70,6 +70,47 @@ CREATE TABLE IF NOT EXISTS service_mapping (
     FOREIGN KEY (property_id) REFERENCES properties(property_id)
 )
 ''')
+
+# clear any previously stored data
+clear_data = """
+DELETE FROM properties;
+DELETE FROM landlords;
+DELETE FROM tenants;
+DELETE FROM tenancy_mapping;
+DELETE FROM services;
+DELETE FROM service_mapping;
+"""
+cursor.executescript(clear_data)
+
+# Populate the db with reference data for demonstration purposes
+ref_data = """
+INSERT INTO properties (property_id, property_name, landlord_name, next_available_date) VALUES (1, 'The Grand Old Mansion', 'Mr. Rich', '2023-01-01');
+INSERT INTO properties (property_id, property_name, landlord_name, next_available_date) VALUES (2, 'Spacious Townhouse', 'Mrs. Gentle', '2023-02-01');
+INSERT INTO properties (property_id, property_name, landlord_name, next_available_date) VALUES (3, 'Cozy Cottage', 'Mr. Tall', '2023-03-01');
+
+INSERT INTO landlords (landlord_id, landlord_name, gender, age) VALUES (1, 'Mr. Rich', 'Male', 50);
+INSERT INTO landlords (landlord_id, landlord_name, gender, age) VALUES (2, 'Mrs. Gentle', 'Female', 45);
+INSERT INTO landlords (landlord_id, landlord_name, gender, age) VALUES (3, 'Mr. Tall', 'Male', 60);
+
+INSERT INTO tenants (tenant_id, tenant_name, gender, age) VALUES (1, 'Tenant 1', 'Female', 30);
+INSERT INTO tenants (tenant_id, tenant_name, gender, age) VALUES (2, 'Tenant 2', 'Male', 25);
+INSERT INTO tenants (tenant_id, tenant_name, gender, age) VALUES (3, 'Tenant 3', 'Female', 35);
+
+INSERT INTO tenancy_mapping (tennancy_mapping_id, property_id, tenant_id, start_date, end_date) VALUES (1, 1, 1, '2022-01-01', '2023-12-31');
+INSERT INTO tenancy_mapping (tennancy_mapping_id, property_id, tenant_id, start_date, end_date) VALUES (2, 2, 2, '2022-02-01', '2023-11-31');
+INSERT INTO tenancy_mapping (tennancy_mapping_id, property_id, tenant_id, start_date, end_date) VALUES (3, 3, 3, '2022-03-01', '2023-10-31');
+
+INSERT INTO services (service_id, service_name) VALUES (1, 'Service 1');
+INSERT INTO services (service_id, service_name) VALUES (2, 'Service 2');
+INSERT INTO services (service_id, service_name) VALUES (3, 'Service 3');
+
+INSERT INTO service_mapping (service_mapping_id, service_id, property_id, last_serviced_date, next_service_date) VALUES (1, 1, 1, '2022-01-01', '2022-07-01');
+INSERT INTO service_mapping (service_mapping_id, service_id, property_id, last_serviced_date, next_service_date) VALUES (2, 2, 2, '2022-02-01', '2022-08-01');
+INSERT INTO service_mapping (service_mapping_id, service_id, property_id, last_serviced_date, next_service_date) VALUES (3, 3, 3, '2022-03-01', '2022-09-01');
+"""
+cursor.executescript(ref_data)
+
+# Commit the creation of tables, and population of database
 conn.commit()
 
 def hash_password(password):
@@ -911,6 +952,10 @@ def show_service_mappings_screen():
         text_label = tk.Label(content_inside_canvas, text=mapping_details, font=("Helvetica", 14), bg='#3652AD', wraplength=400)
         text_label.pack(pady=(0, 20))  # Align to the top and wrap the text
 
+        # Create an edit button for each mapping
+        edit_button = ttk.Button(content_inside_canvas, text="Edit", command=lambda m_id=mapping_id: edit_service_mapping(m_id))
+        edit_button.pack(pady=(0, 20))  # Align to the top and wrap the text
+
     # Create the back to welcome screen button
     back_button = ttk.Button(root, text="Home", command=lambda: show_welcome_screen(username))
     back_button.place(relx=1.0, rely=0.0, anchor='ne', x=-100, y=10)
@@ -1069,6 +1114,101 @@ def add_service_mapping():
     submit_button.pack(pady=(10, 0))
 
 
+def edit_service_mapping(mapping_id):
+    # Create a new window for editing the service mapping
+    edit_service_mapping_window = tk.Toplevel(root)
+    edit_service_mapping_window.title("Edit Service Mapping")
+
+    # Fetch the current service mapping details
+    cursor.execute('''
+        SELECT sm.service_id, sm.property_id, sm.last_serviced_date, sm.next_service_date, s.service_name, p.property_name
+        FROM service_mapping sm 
+        INNER JOIN services s ON sm.service_id = s.service_id
+        INNER JOIN properties p ON sm.property_id == p.property_id
+        WHERE sm.service_mapping_id = ?
+    ''', (mapping_id,))
+    current_mapping = cursor.fetchone()
+
+    if not current_mapping:
+        messagebox.showerror("Error", "Service mapping not found.")
+        edit_service_mapping_window.destroy()
+        return
+
+    current_service_id, current_property_id, current_last_serviced_date, current_next_service_date, current_service_name, current_property_name = current_mapping
+
+    # Fetch service names from the database
+    cursor.execute('SELECT service_name FROM services')
+    service_names = cursor.fetchall()
+
+    # Create a dropdown for service names
+    service_name_label = ttk.Label(edit_service_mapping_window, text="Service Name:")
+    service_name_label.pack(pady=(10, 5))
+    service_name_dropdown = ttk.Combobox(edit_service_mapping_window, values=[row[0] for row in service_names])
+    service_name_dropdown.set(current_service_name)  # Set the current service name
+    service_name_dropdown.pack(pady=(0, 10))
+
+    # Fetch property IDs from the database
+    cursor.execute('SELECT property_name FROM properties')
+    property_names = cursor.fetchall()
+
+    # Create a dropdown for property names
+    property_name_label = ttk.Label(edit_service_mapping_window, text="Property:")
+    property_name_label.pack(pady=(0, 5))
+    property_name_dropdown = ttk.Combobox(edit_service_mapping_window, values=[str(row[0]) for row in property_names])
+    property_name_dropdown.set(current_property_name)  # Set the current property name
+    property_name_dropdown.pack(pady=(0, 10))
+
+    # Create entry fields for last serviced date and next service date
+    last_serviced_date_label = ttk.Label(edit_service_mapping_window, text="Last Serviced Date (YYYY-MM-DD):")
+    last_serviced_date_label.pack(pady=(0, 5))
+    last_serviced_date_entry = ttk.Entry(edit_service_mapping_window)
+    last_serviced_date_entry.insert(0, current_last_serviced_date.split(' ')[0])  # Set the current last serviced date
+    last_serviced_date_entry.pack(pady=(0, 10))
+
+    next_service_date_label = ttk.Label(edit_service_mapping_window, text="Next Service Date (YYYY-MM-DD):")
+    next_service_date_label.pack(pady=(0, 5))
+    next_service_date_entry = ttk.Entry(edit_service_mapping_window)
+    next_service_date_entry.insert(0, current_next_service_date.split(' ')[0])  # Set the current next service date
+    next_service_date_entry.pack(pady=(0, 10))
+
+    # Function to update the service mapping in the database
+    def update_service_mapping():
+        service_name = service_name_dropdown.get()
+        property_name = property_name_dropdown.get()
+        last_serviced_date = last_serviced_date_entry.get()
+        next_service_date = next_service_date_entry.get()
+
+        # Validate the input
+        if not service_name or not property_name or not last_serviced_date or not next_service_date:
+            messagebox.showerror("Error", "All fields are required.")
+            return
+
+        try:
+            # Convert the last_serviced_date and next_service_date strings to date objects
+            last_serviced_date = datetime.strptime(last_serviced_date, "%Y-%m-%d")
+            next_service_date = datetime.strptime(next_service_date, "%Y-%m-%d")
+        except ValueError:
+            messagebox.showerror("Error", "Dates must be in the format YYYY-MM-DD.")
+            return
+
+        # Update the service mapping in the database
+        cursor.execute('''
+            UPDATE service_mapping
+            SET service_id = (SELECT service_id FROM services WHERE service_name = ?),
+                property_id = (SELECT property_id FROM properties WHERE property_name = ?),
+                last_serviced_date = ?,
+                next_service_date = ?
+            WHERE service_mapping_id = ?
+        ''', (service_name, property_name, last_serviced_date, next_service_date, mapping_id))
+        conn.commit()  # Commit the transaction
+
+        # Show a success message and close the window
+        messagebox.showinfo("Success", "Service mapping updated successfully.")
+        edit_service_mapping_window.destroy()
+
+    # Add a button to save the changes
+    save_button = ttk.Button(edit_service_mapping_window, text="Save Changes", command=update_service_mapping)
+    save_button.pack(pady=(10, 10))
 
 def logout():
     # Clear the welcome screen
