@@ -1381,7 +1381,7 @@ def register():
         messagebox.showerror("Error", "Invalid Credentials")
         return
     try:
-        cursor.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, password))
+        cursor.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, hash_password(password)))
         conn.commit()
         messagebox.showinfo("Success", "Account created successfully!")
     except sqlite3.IntegrityError:
