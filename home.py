@@ -1053,6 +1053,7 @@ def show_service_mappings_screen():
     # Bind the configure event to the content frame
     content_inside_canvas.bind('<Configure>', on_content_configure)
 
+
 def add_tenancy():
     # Create a new window for adding a tenancy
     add_tenancy_window = tk.Toplevel(root)
@@ -1065,7 +1066,7 @@ def add_tenancy():
     # Create a dropdown for property IDs
     property_id_label = ttk.Label(add_tenancy_window, text="Property ID:")
     property_id_label.pack(pady=(10, 5))
-    property_id_dropdown = ttk.Combobox(add_tenancy_window, values=[str(row[0]) for row in property_ids])
+    property_id_dropdown = ttk.Combobox(add_tenancy_window, values=[str(row[0]) for row in property_ids], state='readonly')
     property_id_dropdown.pack(pady=(0, 10))
 
     # Fetch tenant IDs from the database
@@ -1075,7 +1076,7 @@ def add_tenancy():
     # Create a dropdown for tenant IDs
     tenant_id_label = ttk.Label(add_tenancy_window, text="Tenant ID:")
     tenant_id_label.pack(pady=(0, 5))
-    tenant_id_dropdown = ttk.Combobox(add_tenancy_window, values=[str(row[0]) for row in tenant_ids])
+    tenant_id_dropdown = ttk.Combobox(add_tenancy_window, values=[str(row[0]) for row in tenant_ids], state='readonly')
     tenant_id_dropdown.pack(pady=(0, 10))
 
     # Create entry fields for start date and end date
@@ -1135,7 +1136,7 @@ def add_service_mapping():
     # Create a dropdown for service names
     service_name_label = ttk.Label(add_service_window, text="Service Name:")
     service_name_label.pack(pady=(10, 5))
-    service_name_dropdown = ttk.Combobox(add_service_window, values=[row[0] for row in service_names])
+    service_name_dropdown = ttk.Combobox(add_service_window, values=[row[0] for row in service_names], state='readonly')
     service_name_dropdown.pack(pady=(0, 10))
 
     # Fetch property IDs from the database
@@ -1145,7 +1146,7 @@ def add_service_mapping():
     # Create a dropdown for property IDs
     property_id_label = ttk.Label(add_service_window, text="Property ID:")
     property_id_label.pack(pady=(0, 5))
-    property_id_dropdown = ttk.Combobox(add_service_window, values=[str(row[0]) for row in property_ids])
+    property_id_dropdown = ttk.Combobox(add_service_window, values=[str(row[0]) for row in property_ids], state='readonly')
     property_id_dropdown.pack(pady=(0, 10))
 
     # Create entry fields for last serviced date and next service date
@@ -1225,7 +1226,7 @@ def edit_service_mapping(mapping_id):
     # Create a dropdown for service names
     service_name_label = ttk.Label(edit_service_mapping_window, text="Service Name:")
     service_name_label.pack(pady=(10, 5))
-    service_name_dropdown = ttk.Combobox(edit_service_mapping_window, values=[row[0] for row in service_names])
+    service_name_dropdown = ttk.Combobox(edit_service_mapping_window, values=[row[0] for row in service_names], state='readonly')
     service_name_dropdown.set(current_service_name)  # Set the current service name
     service_name_dropdown.pack(pady=(0, 10))
 
@@ -1236,7 +1237,7 @@ def edit_service_mapping(mapping_id):
     # Create a dropdown for property names
     property_name_label = ttk.Label(edit_service_mapping_window, text="Property:")
     property_name_label.pack(pady=(0, 5))
-    property_name_dropdown = ttk.Combobox(edit_service_mapping_window, values=[str(row[0]) for row in property_names])
+    property_name_dropdown = ttk.Combobox(edit_service_mapping_window, values=[str(row[0]) for row in property_names], state='readonly')
     property_name_dropdown.set(current_property_name)  # Set the current property name
     property_name_dropdown.pack(pady=(0, 10))
 
