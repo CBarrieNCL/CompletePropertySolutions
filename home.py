@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS service_mapping (
 
 # clear any previously stored data
 clear_data = """
+DELETE FROM users;
 DELETE FROM properties;
 DELETE FROM landlords;
 DELETE FROM tenants;
@@ -119,16 +120,21 @@ def hash_password(password):
 def login():
     global username, password
     username = username_entry.get()
-    password = hash_password(password_entry.get())
+    password = password_entry.get()
 
     # Check if the user is trying to log in as the admin
-    if username == "admin" and password == hash_password("admin"):
+    if username == "admin" and password == "admin":
         # Clear the login screen
         for widget in root.winfo_children():
             widget.destroy()
 
         # Show the admin screen
         show_admin_screen()
+        return
+
+    # Check if either field is empty or contains only whitespace
+    if not username or not password or ' ' in username or ' ' in password:
+        messagebox.showerror("Error", "Username and password cannot be empty or contain whitespace.")
         return
 
     cursor.execute('SELECT * FROM users WHERE username=? AND password=?', (username, password))
@@ -1220,7 +1226,12 @@ def logout():
 
 def register():
     username = username_entry.get()
-    password = hash_password(password_entry.get())
+    password = password_entry.get()
+
+    # Check if either field is empty or contains only whitespace
+    if not username or not password or ' ' in username or ' ' in password:
+        messagebox.showerror("Error", "Username and password cannot be empty or contain whitespace.")
+        return
 
     try:
         cursor.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, password))
