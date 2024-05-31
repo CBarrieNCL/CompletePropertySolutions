@@ -73,6 +73,7 @@ CREATE TABLE IF NOT EXISTS service_mapping (
 
 # clear any previously stored data
 clear_data = """
+DELETE FROM users;
 DELETE FROM properties;
 DELETE FROM landlords;
 DELETE FROM tenants;
@@ -149,18 +150,17 @@ def login():
     else:
         messagebox.showerror("Error", "Invalid username or password.")
 
-
 def show_admin_screen():
     # Clear the root window
     for widget in root.winfo_children():
         widget.destroy()
 
     # Create admin screen
-    admin_label = tk.Label(root, text="Welcome, Admin!", font=("Helvetica", 24), bg='#3652AD')
+    admin_label = tk.Label(root, text="Admin Management Screen", font=("Helvetica", 24), bg='#3652AD')
     admin_label.pack(pady=20)
 
     # Add some sample text
-    sample_text = "This is the admin screen with some sample text."
+    sample_text = "This is the admin screen, use this to view and add records not available to standard users"
     text_label = tk.Label(root, text=sample_text, font=("Helvetica", 14), bg='#3652AD', wraplength=400)
     text_label.pack(pady=(20, 0))  # Add padding to the top
 
@@ -635,7 +635,7 @@ def show_welcome_screen(username):
         widget.destroy()
 
     # Create welcome screen
-    welcome_label = tk.Label(root, text=f"Welcome, {username.capitalize()}!", font=("Helvetica", 24), bg='#3652AD')
+    welcome_label = tk.Label(root, text=f"Welcome, {username}!", font=("Helvetica", 24), bg='#3652AD')
     welcome_label.pack(pady=20)
 
     # Create a frame for the buttons
@@ -669,6 +669,11 @@ def show_welcome_screen(username):
     # Add the add_service button to the admin screen
     add_service_mapping_button = ttk.Button(button_frame, text="Add Service Mapping", command=add_service_mapping)
     add_service_mapping_button.pack(side='left', padx=(0, 10))  # Add horizontal padding
+
+    if username == 'admin':
+        # Create the back to admin screen button
+        back_button = ttk.Button(root, text="Admin", command=lambda: show_admin_screen())
+        back_button.place(relx=1.0, rely=0.0, anchor='ne', x=-100, y=10)
 
     # Create the logout button
     logout_button = ttk.Button(root, text="Logout", command=logout)
@@ -1303,7 +1308,9 @@ def register():
     if not username or not password or ' ' in username or ' ' in password:
         messagebox.showerror("Error", "Username and password cannot be empty or contain whitespace.")
         return
-
+    elif username.lower() == 'admin':
+        messagebox.showerror("Error", "Invalid Credentials")
+        return
     try:
         cursor.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, password))
         conn.commit()
