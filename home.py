@@ -180,8 +180,16 @@ def show_admin_screen():
     display_tenants_button = ttk.Button(root, text="Display Tenant Records", command=display_tenant_records)
     display_tenants_button.pack(pady=(10, 0))
 
+    # Create a button to display tenancy records
+    display_tenants_button = ttk.Button(root, text="Display Tenancy Records", command=display_tenancy_records)
+    display_tenants_button.pack(pady=(10, 0))
+
     # Create a button to display service records
     display_services_button = ttk.Button(root, text="Display Service Records", command=display_service_records)
+    display_services_button.pack(pady=(10, 0))
+
+    # Create a button to display service mapping records
+    display_services_button = ttk.Button(root, text="Display Service Mapping Records", command=display_service_mapping_records)
     display_services_button.pack(pady=(10, 0))
 
     # Create a button to add a new property
@@ -359,6 +367,70 @@ def display_service_records():
 
     # Add a close button to the records window
     close_button = ttk.Button(display_services_window, text="Close", command=close_display_services_window)
+    close_button.pack(pady=(10, 0))
+
+def display_service_mapping_records():
+    # Fetch all service mapping records from the database
+    cursor.execute('SELECT * FROM service_mapping')
+    service_mappings = cursor.fetchall()
+
+    # Create a new window to display the service mapping records
+    display_service_mappings_window = tk.Toplevel(root)
+    display_service_mappings_window.title("Service Mapping Records")
+
+    # Create a treeview to display the records
+    treeview = ttk.Treeview(display_service_mappings_window, columns=("ID", "Service ID", "Property ID", "Last Serviced Date", "Next Service Date"), show="headings")
+    treeview.pack(expand=True, fill='both')
+
+    # Define the columns
+    treeview.heading("ID", text="ID")
+    treeview.heading("Service ID", text="Service ID")
+    treeview.heading("Property ID", text="Property ID")
+    treeview.heading("Last Serviced Date", text="Last Serviced Date")
+    treeview.heading("Next Service Date", text="Next Service Date")
+
+    # Insert the records into the treeview
+    for service_mapping in service_mappings:
+        treeview.insert("", "end", values=service_mapping)
+
+    # Function to close the records window
+    def close_display_service_mappings_window():
+        display_service_mappings_window.destroy()
+
+    # Add a close button to the records window
+    close_button = ttk.Button(display_service_mappings_window, text="Close", command=close_display_service_mappings_window)
+    close_button.pack(pady=(10, 0))
+
+def display_tenancy_records():
+    # Fetch all tenancy records from the database
+    cursor.execute('SELECT * FROM tenancy_mapping')
+    tenancies = cursor.fetchall()
+
+    # Create a new window to display the tenancy records
+    display_tenancy_window = tk.Toplevel(root)
+    display_tenancy_window.title("Tenancy Records")
+
+    # Create a treeview to display the records
+    treeview = ttk.Treeview(display_tenancy_window, columns=("ID", "Property ID", "Tenant ID", "Start Date", "End Date"), show="headings")
+    treeview.pack(expand=True, fill='both')
+
+    # Define the columns
+    treeview.heading("ID", text="ID")
+    treeview.heading("Property ID", text="Service ID")
+    treeview.heading("Tenant ID", text="Property ID")
+    treeview.heading("Start Date", text="Last Serviced Date")
+    treeview.heading("End Date", text="Next Service Date")
+
+    # Insert the records into the treeview
+    for tenancy in tenancies:
+        treeview.insert("", "end", values=tenancy)
+
+    # Function to close the records window
+    def close_display_tenancy_window():
+        display_tenancy_window.destroy()
+
+    # Add a close button to the records window
+    close_button = ttk.Button(display_tenancy_window, text="Close", command=close_display_tenancy_window)
     close_button.pack(pady=(10, 0))
 
 def add_property():
