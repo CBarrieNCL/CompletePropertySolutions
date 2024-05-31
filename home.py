@@ -70,48 +70,50 @@ CREATE TABLE IF NOT EXISTS service_mapping (
     FOREIGN KEY (property_id) REFERENCES properties(property_id)
 )
 ''')
+# Function to clear all data
+def clear_data():
+    clear_data_sql = """
+        DELETE FROM properties;
+        DELETE FROM landlords;
+        DELETE FROM tenants;
+        DELETE FROM tenancy_mapping;
+        DELETE FROM services;
+        DELETE FROM service_mapping;
+        """
+    cursor.executescript(clear_data_sql)
+    conn.commit()
+    messagebox.showinfo("Success", "All data has been cleared successfully.")
 
-# clear any previously stored data
-clear_data = """
-DELETE FROM properties;
-DELETE FROM landlords;
-DELETE FROM tenants;
-DELETE FROM tenancy_mapping;
-DELETE FROM services;
-DELETE FROM service_mapping;
-"""
-cursor.executescript(clear_data)
+# Function to populate reference data
+def populate_reference_data():
+    ref_data_sql = """
+        INSERT INTO properties (property_id, property_name, landlord_name, next_available_date) VALUES (1, 'The Grand Old Mansion', 'Mr. Rich', '2023-01-01');
+        INSERT INTO properties (property_id, property_name, landlord_name, next_available_date) VALUES (2, 'Spacious Townhouse', 'Mrs. Gentle', '2023-02-01');
+        INSERT INTO properties (property_id, property_name, landlord_name, next_available_date) VALUES (3, 'Cozy Cottage', 'Mr. Tall', '2023-03-01');
 
-# Populate the db with reference data for demonstration purposes
-ref_data = """
-INSERT INTO properties (property_id, property_name, landlord_name, next_available_date) VALUES (1, 'The Grand Old Mansion', 'Mr. Rich', '2023-01-01');
-INSERT INTO properties (property_id, property_name, landlord_name, next_available_date) VALUES (2, 'Spacious Townhouse', 'Mrs. Gentle', '2023-02-01');
-INSERT INTO properties (property_id, property_name, landlord_name, next_available_date) VALUES (3, 'Cozy Cottage', 'Mr. Tall', '2023-03-01');
+        INSERT INTO landlords (landlord_id, landlord_name, gender, age) VALUES (1, 'Mr. Rich', 'Male', 50);
+        INSERT INTO landlords (landlord_id, landlord_name, gender, age) VALUES (2, 'Mrs. Gentle', 'Female', 45);
+        INSERT INTO landlords (landlord_id, landlord_name, gender, age) VALUES (3, 'Mr. Tall', 'Male', 60);
 
-INSERT INTO landlords (landlord_id, landlord_name, gender, age) VALUES (1, 'Mr. Rich', 'Male', 50);
-INSERT INTO landlords (landlord_id, landlord_name, gender, age) VALUES (2, 'Mrs. Gentle', 'Female', 45);
-INSERT INTO landlords (landlord_id, landlord_name, gender, age) VALUES (3, 'Mr. Tall', 'Male', 60);
+        INSERT INTO tenants (tenant_id, tenant_name, gender, age) VALUES (1, 'Dr. Drew', 'Female', 30);
+        INSERT INTO tenants (tenant_id, tenant_name, gender, age) VALUES (2, 'Rev. Pettifer', 'Male', 25);
+        INSERT INTO tenants (tenant_id, tenant_name, gender, age) VALUES (3, 'Sir Humble', 'Male', 35);
 
-INSERT INTO tenants (tenant_id, tenant_name, gender, age) VALUES (1, 'Tenant 1', 'Female', 30);
-INSERT INTO tenants (tenant_id, tenant_name, gender, age) VALUES (2, 'Tenant 2', 'Male', 25);
-INSERT INTO tenants (tenant_id, tenant_name, gender, age) VALUES (3, 'Tenant 3', 'Female', 35);
+        INSERT INTO tenancy_mapping (tennancy_mapping_id, property_id, tenant_id, start_date, end_date) VALUES (1, 1, 1, '2022-01-01 00:00:00', '2023-12-31 00:00:00');
+        INSERT INTO tenancy_mapping (tennancy_mapping_id, property_id, tenant_id, start_date, end_date) VALUES (2, 2, 2, '2022-02-01 00:00:00', '2023-11-31 00:00:00');
+        INSERT INTO tenancy_mapping (tennancy_mapping_id, property_id, tenant_id, start_date, end_date) VALUES (3, 3, 3, '2022-03-01 00:00:00', '2023-10-31 00:00:00');
 
-INSERT INTO tenancy_mapping (tennancy_mapping_id, property_id, tenant_id, start_date, end_date) VALUES (1, 1, 1, '2022-01-01', '2023-12-31');
-INSERT INTO tenancy_mapping (tennancy_mapping_id, property_id, tenant_id, start_date, end_date) VALUES (2, 2, 2, '2022-02-01', '2023-11-31');
-INSERT INTO tenancy_mapping (tennancy_mapping_id, property_id, tenant_id, start_date, end_date) VALUES (3, 3, 3, '2022-03-01', '2023-10-31');
+        INSERT INTO services (service_id, service_name) VALUES (1, 'Heating Inspection');
+        INSERT INTO services (service_id, service_name) VALUES (2, 'Boiler Service');
+        INSERT INTO services (service_id, service_name) VALUES (3, 'Electircal Inspection');
 
-INSERT INTO services (service_id, service_name) VALUES (1, 'Service 1');
-INSERT INTO services (service_id, service_name) VALUES (2, 'Service 2');
-INSERT INTO services (service_id, service_name) VALUES (3, 'Service 3');
-
-INSERT INTO service_mapping (service_mapping_id, service_id, property_id, last_serviced_date, next_service_date) VALUES (1, 1, 1, '2022-01-01', '2022-07-01');
-INSERT INTO service_mapping (service_mapping_id, service_id, property_id, last_serviced_date, next_service_date) VALUES (2, 2, 2, '2022-02-01', '2022-08-01');
-INSERT INTO service_mapping (service_mapping_id, service_id, property_id, last_serviced_date, next_service_date) VALUES (3, 3, 3, '2022-03-01', '2022-09-01');
-"""
-cursor.executescript(ref_data)
-
-# Commit the creation of tables, and population of database
-conn.commit()
+        INSERT INTO service_mapping (service_mapping_id, service_id, property_id, last_serviced_date, next_service_date) VALUES (1, 1, 1, '2022-01-01 00:00:00', '2022-07-01 00:00:00');
+        INSERT INTO service_mapping (service_mapping_id, service_id, property_id, last_serviced_date, next_service_date) VALUES (2, 2, 2, '2022-02-01 00:00:00', '2022-08-01 00:00:00');
+        INSERT INTO service_mapping (service_mapping_id, service_id, property_id, last_serviced_date, next_service_date) VALUES (3, 3, 3, '2022-03-01 00:00:00', '2022-09-01 00:00:00');
+        """
+    cursor.executescript(ref_data_sql)
+    conn.commit()
+    messagebox.showinfo("Success", "Reference data has been populated successfully.")
 
 def hash_password(password):
     return sha256(password.encode()).hexdigest()
@@ -119,16 +121,21 @@ def hash_password(password):
 def login():
     global username, password
     username = username_entry.get()
-    password = hash_password(password_entry.get())
+    password = password_entry.get()
 
     # Check if the user is trying to log in as the admin
-    if username == "admin" and password == hash_password("admin"):
+    if username == "admin" and password == "admin":
         # Clear the login screen
         for widget in root.winfo_children():
             widget.destroy()
 
         # Show the admin screen
         show_admin_screen()
+        return
+
+    # Check if either field is empty or contains only whitespace
+    if not username or not password or ' ' in username or ' ' in password:
+        messagebox.showerror("Error", "Username and password cannot be empty or contain whitespace.")
         return
 
     cursor.execute('SELECT * FROM users WHERE username=? AND password=?', (username, password))
@@ -144,18 +151,17 @@ def login():
     else:
         messagebox.showerror("Error", "Invalid username or password.")
 
-
 def show_admin_screen():
     # Clear the root window
     for widget in root.winfo_children():
         widget.destroy()
 
     # Create admin screen
-    admin_label = tk.Label(root, text="Welcome, Admin!", font=("Helvetica", 24), bg='#3652AD')
+    admin_label = tk.Label(root, text="Admin Management Screen", font=("Helvetica", 24), bg='#3652AD')
     admin_label.pack(pady=20)
 
     # Add some sample text
-    sample_text = "This is the admin screen with some sample text."
+    sample_text = "This is the admin screen, use this to view and add records not available to standard users"
     text_label = tk.Label(root, text=sample_text, font=("Helvetica", 14), bg='#3652AD', wraplength=400)
     text_label.pack(pady=(20, 0))  # Add padding to the top
 
@@ -175,8 +181,16 @@ def show_admin_screen():
     display_tenants_button = ttk.Button(root, text="Display Tenant Records", command=display_tenant_records)
     display_tenants_button.pack(pady=(10, 0))
 
+    # Create a button to display tenancy records
+    display_tenants_button = ttk.Button(root, text="Display Tenancy Records", command=display_tenancy_records)
+    display_tenants_button.pack(pady=(10, 0))
+
     # Create a button to display service records
     display_services_button = ttk.Button(root, text="Display Service Records", command=display_service_records)
+    display_services_button.pack(pady=(10, 0))
+
+    # Create a button to display service mapping records
+    display_services_button = ttk.Button(root, text="Display Service Mapping Records", command=display_service_mapping_records)
     display_services_button.pack(pady=(10, 0))
 
     # Create a button to add a new property
@@ -194,6 +208,15 @@ def show_admin_screen():
     # Create a button to add a new tenant
     add_service_button = ttk.Button(root, text="Add Sevice", command=add_service)
     add_service_button.pack(pady=(10, 0))
+
+    # Create buttons to populate reference data
+    populate_data_button = ttk.Button(root, text="Populate Reference Data", command=populate_reference_data)
+    populate_data_button.pack(pady=(10, 0))
+
+    # Create buttons to clear data
+    clear_data_button = ttk.Button(root, text="Clear Data", command=clear_data)
+    clear_data_button.pack(pady=(10, 0))
+
 
     # Create the back to welcome screen button
     back_button = ttk.Button(root, text="Home", command=lambda: show_welcome_screen(username))
@@ -354,6 +377,70 @@ def display_service_records():
 
     # Add a close button to the records window
     close_button = ttk.Button(display_services_window, text="Close", command=close_display_services_window)
+    close_button.pack(pady=(10, 0))
+
+def display_service_mapping_records():
+    # Fetch all service mapping records from the database
+    cursor.execute('SELECT * FROM service_mapping')
+    service_mappings = cursor.fetchall()
+
+    # Create a new window to display the service mapping records
+    display_service_mappings_window = tk.Toplevel(root)
+    display_service_mappings_window.title("Service Mapping Records")
+
+    # Create a treeview to display the records
+    treeview = ttk.Treeview(display_service_mappings_window, columns=("ID", "Service ID", "Property ID", "Last Serviced Date", "Next Service Date"), show="headings")
+    treeview.pack(expand=True, fill='both')
+
+    # Define the columns
+    treeview.heading("ID", text="ID")
+    treeview.heading("Service ID", text="Service ID")
+    treeview.heading("Property ID", text="Property ID")
+    treeview.heading("Last Serviced Date", text="Last Serviced Date")
+    treeview.heading("Next Service Date", text="Next Service Date")
+
+    # Insert the records into the treeview
+    for service_mapping in service_mappings:
+        treeview.insert("", "end", values=service_mapping)
+
+    # Function to close the records window
+    def close_display_service_mappings_window():
+        display_service_mappings_window.destroy()
+
+    # Add a close button to the records window
+    close_button = ttk.Button(display_service_mappings_window, text="Close", command=close_display_service_mappings_window)
+    close_button.pack(pady=(10, 0))
+
+def display_tenancy_records():
+    # Fetch all tenancy records from the database
+    cursor.execute('SELECT * FROM tenancy_mapping')
+    tenancies = cursor.fetchall()
+
+    # Create a new window to display the tenancy records
+    display_tenancy_window = tk.Toplevel(root)
+    display_tenancy_window.title("Tenancy Records")
+
+    # Create a treeview to display the records
+    treeview = ttk.Treeview(display_tenancy_window, columns=("ID", "Property ID", "Tenant ID", "Start Date", "End Date"), show="headings")
+    treeview.pack(expand=True, fill='both')
+
+    # Define the columns
+    treeview.heading("ID", text="ID")
+    treeview.heading("Property ID", text="Service ID")
+    treeview.heading("Tenant ID", text="Property ID")
+    treeview.heading("Start Date", text="Last Serviced Date")
+    treeview.heading("End Date", text="Next Service Date")
+
+    # Insert the records into the treeview
+    for tenancy in tenancies:
+        treeview.insert("", "end", values=tenancy)
+
+    # Function to close the records window
+    def close_display_tenancy_window():
+        display_tenancy_window.destroy()
+
+    # Add a close button to the records window
+    close_button = ttk.Button(display_tenancy_window, text="Close", command=close_display_tenancy_window)
     close_button.pack(pady=(10, 0))
 
 def add_property():
@@ -558,7 +645,7 @@ def show_welcome_screen(username):
         widget.destroy()
 
     # Create welcome screen
-    welcome_label = tk.Label(root, text=f"Welcome, {username.capitalize()}!", font=("Helvetica", 24), bg='#3652AD')
+    welcome_label = tk.Label(root, text=f"Welcome, {username}!", font=("Helvetica", 24), bg='#3652AD')
     welcome_label.pack(pady=20)
 
     # Create a frame for the buttons
@@ -593,6 +680,11 @@ def show_welcome_screen(username):
     add_service_mapping_button = ttk.Button(button_frame, text="Add Service Mapping", command=add_service_mapping)
     add_service_mapping_button.pack(side='left', padx=(0, 10))  # Add horizontal padding
 
+    if username == 'admin':
+        # Create the back to admin screen button
+        back_button = ttk.Button(root, text="Admin", command=lambda: show_admin_screen())
+        back_button.place(relx=1.0, rely=0.0, anchor='ne', x=-100, y=10)
+
     # Create the logout button
     logout_button = ttk.Button(root, text="Logout", command=logout)
     logout_button.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=10)
@@ -602,6 +694,9 @@ def show_properties_screen():
     # Clear the properties screen
     for widget in root.winfo_children():
         widget.destroy()
+
+    # Create a list to hold the selected properties for comparison
+    selected_properties = []
 
     # Create a label for the properties screen
     properties_label = tk.Label(root, text="Properties:", font=("Helvetica", 24), bg='#3652AD')
@@ -634,6 +729,20 @@ def show_properties_screen():
     # Add the content frame to the canvas
     canvas.create_window((0, 0), window=content_inside_canvas, anchor='nw')
 
+    # Function to handle the comparison button press
+    def compare_properties(property_details):
+        nonlocal selected_properties
+
+        # Add the property to the list of selected properties
+        selected_properties.append(property_details)
+
+        # If two properties are selected, show the comparison screen
+        if len(selected_properties) == 2:
+            show_comparison_screen(selected_properties)
+            # Reset the list of selected properties
+            selected_properties = []
+
+
     # Fetch properties from the database
     cursor.execute('SELECT property_name, landlord_name, next_available_date FROM properties')
     properties = cursor.fetchall()
@@ -658,6 +767,11 @@ def show_properties_screen():
         text_label = tk.Label(content_inside_canvas, text=property_details, font=("Helvetica", 14), bg='#3652AD', wraplength=400, pady=5)
         text_label.grid(row=i, column=1, sticky='w')  # Align to the left and wrap the text
 
+        # Create a button to compare the property
+        compare_button = ttk.Button(content_inside_canvas, text="Compare", command=lambda p=property_details: compare_properties(p))
+        compare_button.grid(row=i, column=2, sticky='w')  # Align to the right
+
+
     # Create the back to welcome screen button
     back_button = ttk.Button(root, text="Home", command=lambda: show_welcome_screen(username))
     back_button.place(relx=1.0, rely=0.0, anchor='ne', x=-100, y=10)
@@ -672,6 +786,42 @@ def show_properties_screen():
 
     # Bind the configure event to the content frame
     content_inside_canvas.bind('<Configure>', on_content_configure)
+
+# Function to show the comparison screen
+def show_comparison_screen(properties):
+    # Clear the comparison screen
+    for widget in root.winfo_children():
+        widget.destroy()
+
+    # Create a label for the comparison screen
+    comparison_label = tk.Label(root, text="Comparison:", font=("Helvetica", 24), bg='#3652AD')
+    comparison_label.pack(pady=20)
+
+    # Create a frame for the property details
+    content_frame = tk.Frame(root, bg='#3652AD')
+    content_frame.pack(expand=True, fill='both')
+
+    # Display the selected properties side by side
+    for i, prop in enumerate(properties):
+        # Create a label for the text block
+        text_label = tk.Label(content_frame, text=prop, font=("Helvetica", 14), bg='#3652AD', wraplength=400, pady=5)
+        text_label.grid(row=3, column=i, sticky='nsew')  # Two columns, properties show in order of selection
+
+        content_frame.grid_columnconfigure(i, weight=1)
+
+
+    # Create the back to properties screen button
+    back_button = ttk.Button(root, text="Back to Properties", command=show_properties_screen)
+    back_button.place(relx=1.0, rely=0.0, anchor='ne', x=-190, y=10)
+
+    # Create the back to welcome screen button
+    back_button = ttk.Button(root, text="Home", command=lambda: show_welcome_screen(username))
+    back_button.place(relx=1.0, rely=0.0, anchor='ne', x=-100, y=10)
+
+    # Create the logout button after packing the property list
+    logout_button = ttk.Button(root, text="Logout", command=logout)
+    logout_button.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=10)
+
 
 def show_landlords_screen():
     # Clear the properties screen
@@ -971,6 +1121,7 @@ def show_service_mappings_screen():
     # Bind the configure event to the content frame
     content_inside_canvas.bind('<Configure>', on_content_configure)
 
+
 def add_tenancy():
     # Create a new window for adding a tenancy
     add_tenancy_window = tk.Toplevel(root)
@@ -983,7 +1134,7 @@ def add_tenancy():
     # Create a dropdown for property IDs
     property_id_label = ttk.Label(add_tenancy_window, text="Property ID:")
     property_id_label.pack(pady=(10, 5))
-    property_id_dropdown = ttk.Combobox(add_tenancy_window, values=[str(row[0]) for row in property_ids])
+    property_id_dropdown = ttk.Combobox(add_tenancy_window, values=[str(row[0]) for row in property_ids], state='readonly')
     property_id_dropdown.pack(pady=(0, 10))
 
     # Fetch tenant IDs from the database
@@ -993,7 +1144,7 @@ def add_tenancy():
     # Create a dropdown for tenant IDs
     tenant_id_label = ttk.Label(add_tenancy_window, text="Tenant ID:")
     tenant_id_label.pack(pady=(0, 5))
-    tenant_id_dropdown = ttk.Combobox(add_tenancy_window, values=[str(row[0]) for row in tenant_ids])
+    tenant_id_dropdown = ttk.Combobox(add_tenancy_window, values=[str(row[0]) for row in tenant_ids], state='readonly')
     tenant_id_dropdown.pack(pady=(0, 10))
 
     # Create entry fields for start date and end date
@@ -1053,7 +1204,7 @@ def add_service_mapping():
     # Create a dropdown for service names
     service_name_label = ttk.Label(add_service_window, text="Service Name:")
     service_name_label.pack(pady=(10, 5))
-    service_name_dropdown = ttk.Combobox(add_service_window, values=[row[0] for row in service_names])
+    service_name_dropdown = ttk.Combobox(add_service_window, values=[row[0] for row in service_names], state='readonly')
     service_name_dropdown.pack(pady=(0, 10))
 
     # Fetch property IDs from the database
@@ -1063,7 +1214,7 @@ def add_service_mapping():
     # Create a dropdown for property IDs
     property_id_label = ttk.Label(add_service_window, text="Property ID:")
     property_id_label.pack(pady=(0, 5))
-    property_id_dropdown = ttk.Combobox(add_service_window, values=[str(row[0]) for row in property_ids])
+    property_id_dropdown = ttk.Combobox(add_service_window, values=[str(row[0]) for row in property_ids], state='readonly')
     property_id_dropdown.pack(pady=(0, 10))
 
     # Create entry fields for last serviced date and next service date
@@ -1143,7 +1294,7 @@ def edit_service_mapping(mapping_id):
     # Create a dropdown for service names
     service_name_label = ttk.Label(edit_service_mapping_window, text="Service Name:")
     service_name_label.pack(pady=(10, 5))
-    service_name_dropdown = ttk.Combobox(edit_service_mapping_window, values=[row[0] for row in service_names])
+    service_name_dropdown = ttk.Combobox(edit_service_mapping_window, values=[row[0] for row in service_names], state='readonly')
     service_name_dropdown.set(current_service_name)  # Set the current service name
     service_name_dropdown.pack(pady=(0, 10))
 
@@ -1154,7 +1305,7 @@ def edit_service_mapping(mapping_id):
     # Create a dropdown for property names
     property_name_label = ttk.Label(edit_service_mapping_window, text="Property:")
     property_name_label.pack(pady=(0, 5))
-    property_name_dropdown = ttk.Combobox(edit_service_mapping_window, values=[str(row[0]) for row in property_names])
+    property_name_dropdown = ttk.Combobox(edit_service_mapping_window, values=[str(row[0]) for row in property_names], state='readonly')
     property_name_dropdown.set(current_property_name)  # Set the current property name
     property_name_dropdown.pack(pady=(0, 10))
 
@@ -1220,8 +1371,15 @@ def logout():
 
 def register():
     username = username_entry.get()
-    password = hash_password(password_entry.get())
+    password = password_entry.get()
 
+    # Check if either field is empty or contains only whitespace
+    if not username or not password or ' ' in username or ' ' in password:
+        messagebox.showerror("Error", "Username and password cannot be empty or contain whitespace.")
+        return
+    elif username.lower() == 'admin':
+        messagebox.showerror("Error", "Invalid Credentials")
+        return
     try:
         cursor.execute('INSERT INTO users (username, password) VALUES (?, ?)', (username, password))
         conn.commit()
@@ -1262,7 +1420,7 @@ def create_login_screen():
 
 # GUI setup
 root = tk.Tk()
-root.title("Login Screen")
+root.title("Complete Property Solutions")
 
 # Get the screen dimensions
 screen_width = root.winfo_screenwidth()
