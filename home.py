@@ -685,6 +685,9 @@ def show_properties_screen():
     for widget in root.winfo_children():
         widget.destroy()
 
+    # Create a list to hold the selected properties for comparison
+    selected_properties = []
+
     # Create a label for the properties screen
     properties_label = tk.Label(root, text="Properties:", font=("Helvetica", 24), bg='#3652AD')
     properties_label.pack(pady=20)
@@ -716,6 +719,20 @@ def show_properties_screen():
     # Add the content frame to the canvas
     canvas.create_window((0, 0), window=content_inside_canvas, anchor='nw')
 
+    # Function to handle the comparison button press
+    def compare_properties(property_details):
+        nonlocal selected_properties
+
+        # Add the property to the list of selected properties
+        selected_properties.append(property_details)
+
+        # If two properties are selected, show the comparison screen
+        if len(selected_properties) == 2:
+            show_comparison_screen(selected_properties)
+            # Reset the list of selected properties
+            selected_properties = []
+
+
     # Fetch properties from the database
     cursor.execute('SELECT property_name, landlord_name, next_available_date FROM properties')
     properties = cursor.fetchall()
@@ -740,6 +757,11 @@ def show_properties_screen():
         text_label = tk.Label(content_inside_canvas, text=property_details, font=("Helvetica", 14), bg='#3652AD', wraplength=400, pady=5)
         text_label.grid(row=i, column=1, sticky='w')  # Align to the left and wrap the text
 
+        # Create a button to compare the property
+        compare_button = ttk.Button(content_inside_canvas, text="Compare", command=lambda p=property_details: compare_properties(p))
+        compare_button.grid(row=i, column=2, sticky='w')  # Align to the right
+
+
     # Create the back to welcome screen button
     back_button = ttk.Button(root, text="Home", command=lambda: show_welcome_screen(username))
     back_button.place(relx=1.0, rely=0.0, anchor='ne', x=-100, y=10)
@@ -754,6 +776,42 @@ def show_properties_screen():
 
     # Bind the configure event to the content frame
     content_inside_canvas.bind('<Configure>', on_content_configure)
+
+# Function to show the comparison screen
+def show_comparison_screen(properties):
+    # Clear the comparison screen
+    for widget in root.winfo_children():
+        widget.destroy()
+
+    # Create a label for the comparison screen
+    comparison_label = tk.Label(root, text="Comparison:", font=("Helvetica", 24), bg='#3652AD')
+    comparison_label.pack(pady=20)
+
+    # Create a frame for the property details
+    content_frame = tk.Frame(root, bg='#3652AD')
+    content_frame.pack(expand=True, fill='both')
+
+    # Display the selected properties side by side
+    for i, prop in enumerate(properties):
+        # Create a label for the text block
+        text_label = tk.Label(content_frame, text=prop, font=("Helvetica", 14), bg='#3652AD', wraplength=400, pady=5)
+        text_label.grid(row=3, column=i, sticky='nsew')  # Two columns, properties show in order of selection
+
+        content_frame.grid_columnconfigure(i, weight=1)
+
+
+    # Create the back to properties screen button
+    back_button = ttk.Button(root, text="Back to Properties", command=show_properties_screen)
+    back_button.place(relx=1.0, rely=0.0, anchor='ne', x=-190, y=10)
+
+    # Create the back to welcome screen button
+    back_button = ttk.Button(root, text="Home", command=lambda: show_welcome_screen(username))
+    back_button.place(relx=1.0, rely=0.0, anchor='ne', x=-100, y=10)
+
+    # Create the logout button after packing the property list
+    logout_button = ttk.Button(root, text="Logout", command=logout)
+    logout_button.place(relx=1.0, rely=0.0, anchor='ne', x=-10, y=10)
+
 
 def show_landlords_screen():
     # Clear the properties screen
@@ -1352,7 +1410,7 @@ def create_login_screen():
 
 # GUI setup
 root = tk.Tk()
-root.title("Login Screen")
+root.title("Complete Property Solutions")
 
 # Get the screen dimensions
 screen_width = root.winfo_screenwidth()
