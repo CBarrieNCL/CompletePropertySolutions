@@ -70,49 +70,50 @@ CREATE TABLE IF NOT EXISTS service_mapping (
     FOREIGN KEY (property_id) REFERENCES properties(property_id)
 )
 ''')
+# Function to clear all data
+def clear_data():
+    clear_data_sql = """
+        DELETE FROM properties;
+        DELETE FROM landlords;
+        DELETE FROM tenants;
+        DELETE FROM tenancy_mapping;
+        DELETE FROM services;
+        DELETE FROM service_mapping;
+        """
+    cursor.executescript(clear_data_sql)
+    conn.commit()
+    messagebox.showinfo("Success", "All data has been cleared successfully.")
 
-# clear any previously stored data
-clear_data = """
-DELETE FROM users;
-DELETE FROM properties;
-DELETE FROM landlords;
-DELETE FROM tenants;
-DELETE FROM tenancy_mapping;
-DELETE FROM services;
-DELETE FROM service_mapping;
-"""
-cursor.executescript(clear_data)
+# Function to populate reference data
+def populate_reference_data():
+    ref_data_sql = """
+        INSERT INTO properties (property_id, property_name, landlord_name, next_available_date) VALUES (1, 'The Grand Old Mansion', 'Mr. Rich', '2023-01-01');
+        INSERT INTO properties (property_id, property_name, landlord_name, next_available_date) VALUES (2, 'Spacious Townhouse', 'Mrs. Gentle', '2023-02-01');
+        INSERT INTO properties (property_id, property_name, landlord_name, next_available_date) VALUES (3, 'Cozy Cottage', 'Mr. Tall', '2023-03-01');
 
-# Populate the db with reference data for demonstration purposes
-ref_data = """
-INSERT INTO properties (property_id, property_name, landlord_name, next_available_date) VALUES (1, 'The Grand Old Mansion', 'Mr. Rich', '2023-01-01');
-INSERT INTO properties (property_id, property_name, landlord_name, next_available_date) VALUES (2, 'Spacious Townhouse', 'Mrs. Gentle', '2023-02-01');
-INSERT INTO properties (property_id, property_name, landlord_name, next_available_date) VALUES (3, 'Cozy Cottage', 'Mr. Tall', '2023-03-01');
+        INSERT INTO landlords (landlord_id, landlord_name, gender, age) VALUES (1, 'Mr. Rich', 'Male', 50);
+        INSERT INTO landlords (landlord_id, landlord_name, gender, age) VALUES (2, 'Mrs. Gentle', 'Female', 45);
+        INSERT INTO landlords (landlord_id, landlord_name, gender, age) VALUES (3, 'Mr. Tall', 'Male', 60);
 
-INSERT INTO landlords (landlord_id, landlord_name, gender, age) VALUES (1, 'Mr. Rich', 'Male', 50);
-INSERT INTO landlords (landlord_id, landlord_name, gender, age) VALUES (2, 'Mrs. Gentle', 'Female', 45);
-INSERT INTO landlords (landlord_id, landlord_name, gender, age) VALUES (3, 'Mr. Tall', 'Male', 60);
+        INSERT INTO tenants (tenant_id, tenant_name, gender, age) VALUES (1, 'Dr. Drew', 'Female', 30);
+        INSERT INTO tenants (tenant_id, tenant_name, gender, age) VALUES (2, 'Rev. Pettifer', 'Male', 25);
+        INSERT INTO tenants (tenant_id, tenant_name, gender, age) VALUES (3, 'Sir Humble', 'Male', 35);
 
-INSERT INTO tenants (tenant_id, tenant_name, gender, age) VALUES (1, 'Tenant 1', 'Female', 30);
-INSERT INTO tenants (tenant_id, tenant_name, gender, age) VALUES (2, 'Tenant 2', 'Male', 25);
-INSERT INTO tenants (tenant_id, tenant_name, gender, age) VALUES (3, 'Tenant 3', 'Female', 35);
+        INSERT INTO tenancy_mapping (tennancy_mapping_id, property_id, tenant_id, start_date, end_date) VALUES (1, 1, 1, '2022-01-01 00:00:00', '2023-12-31 00:00:00');
+        INSERT INTO tenancy_mapping (tennancy_mapping_id, property_id, tenant_id, start_date, end_date) VALUES (2, 2, 2, '2022-02-01 00:00:00', '2023-11-31 00:00:00');
+        INSERT INTO tenancy_mapping (tennancy_mapping_id, property_id, tenant_id, start_date, end_date) VALUES (3, 3, 3, '2022-03-01 00:00:00', '2023-10-31 00:00:00');
 
-INSERT INTO tenancy_mapping (tennancy_mapping_id, property_id, tenant_id, start_date, end_date) VALUES (1, 1, 1, '2022-01-01', '2023-12-31');
-INSERT INTO tenancy_mapping (tennancy_mapping_id, property_id, tenant_id, start_date, end_date) VALUES (2, 2, 2, '2022-02-01', '2023-11-31');
-INSERT INTO tenancy_mapping (tennancy_mapping_id, property_id, tenant_id, start_date, end_date) VALUES (3, 3, 3, '2022-03-01', '2023-10-31');
+        INSERT INTO services (service_id, service_name) VALUES (1, 'Heating Inspection');
+        INSERT INTO services (service_id, service_name) VALUES (2, 'Boiler Service');
+        INSERT INTO services (service_id, service_name) VALUES (3, 'Electircal Inspection');
 
-INSERT INTO services (service_id, service_name) VALUES (1, 'Service 1');
-INSERT INTO services (service_id, service_name) VALUES (2, 'Service 2');
-INSERT INTO services (service_id, service_name) VALUES (3, 'Service 3');
-
-INSERT INTO service_mapping (service_mapping_id, service_id, property_id, last_serviced_date, next_service_date) VALUES (1, 1, 1, '2022-01-01', '2022-07-01');
-INSERT INTO service_mapping (service_mapping_id, service_id, property_id, last_serviced_date, next_service_date) VALUES (2, 2, 2, '2022-02-01', '2022-08-01');
-INSERT INTO service_mapping (service_mapping_id, service_id, property_id, last_serviced_date, next_service_date) VALUES (3, 3, 3, '2022-03-01', '2022-09-01');
-"""
-cursor.executescript(ref_data)
-
-# Commit the creation of tables, and population of database
-conn.commit()
+        INSERT INTO service_mapping (service_mapping_id, service_id, property_id, last_serviced_date, next_service_date) VALUES (1, 1, 1, '2022-01-01 00:00:00', '2022-07-01 00:00:00');
+        INSERT INTO service_mapping (service_mapping_id, service_id, property_id, last_serviced_date, next_service_date) VALUES (2, 2, 2, '2022-02-01 00:00:00', '2022-08-01 00:00:00');
+        INSERT INTO service_mapping (service_mapping_id, service_id, property_id, last_serviced_date, next_service_date) VALUES (3, 3, 3, '2022-03-01 00:00:00', '2022-09-01 00:00:00');
+        """
+    cursor.executescript(ref_data_sql)
+    conn.commit()
+    messagebox.showinfo("Success", "Reference data has been populated successfully.")
 
 def hash_password(password):
     return sha256(password.encode()).hexdigest()
@@ -207,6 +208,15 @@ def show_admin_screen():
     # Create a button to add a new tenant
     add_service_button = ttk.Button(root, text="Add Sevice", command=add_service)
     add_service_button.pack(pady=(10, 0))
+
+    # Create buttons to populate reference data
+    populate_data_button = ttk.Button(root, text="Populate Reference Data", command=populate_reference_data)
+    populate_data_button.pack(pady=(10, 0))
+
+    # Create buttons to clear data
+    clear_data_button = ttk.Button(root, text="Clear Data", command=clear_data)
+    clear_data_button.pack(pady=(10, 0))
+
 
     # Create the back to welcome screen button
     back_button = ttk.Button(root, text="Home", command=lambda: show_welcome_screen(username))
