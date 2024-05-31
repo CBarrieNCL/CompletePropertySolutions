@@ -73,7 +73,6 @@ CREATE TABLE IF NOT EXISTS service_mapping (
 
 # clear any previously stored data
 clear_data = """
-DELETE FROM users;
 DELETE FROM properties;
 DELETE FROM landlords;
 DELETE FROM tenants;
